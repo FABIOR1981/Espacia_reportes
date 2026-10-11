@@ -4,8 +4,8 @@ const CONFIG = {
   // true = se conecta a la Netlify Function para leer el repositorio de GitHub real
   usarGitHubReal: true, 
 
-  githubOwner: "tu-usuario-o-organizacion",     // Tu usuario o organización de GitHub
-  githubRepo: "nombre-del-repositorio",         // El repositorio donde están los JSON
+  githubOwner: "fabior1981",     // Tu usuario o organización de GitHub
+  githubRepo: "bd",         // El repositorio donde están los JSON
   githubBranch: "main",                         // La rama (ej: main o master)
-  githubFolder: "backups/reservas"              // La subcarpeta exacta dentro del repo
+  githubFolder: "espacia/backups/"              // La subcarpeta exacta dentro del repo
 };
