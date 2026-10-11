@@ -111,21 +111,30 @@ function renderCharts(efectuadas, canceladas, reservas) {
     options: { responsive: true, maintainAspectRatio: false }
   });
 
+  // 1. Agrupar conteo por consultorio
   const consultorioCounts = {};
   reservas.forEach(r => {
     const descConsultorio = r.description.find(line => line.includes("Consultorio:"));
     const cons = descConsultorio ? descConsultorio.split(":")[1].trim() : "Desconocido";
-    consultorioCounts[`Consultorio ${cons}`] = (consultorioCounts[`Consultorio ${cons}`] || 0) + 1;
+    const key = `Consultorio ${cons}`;
+    consultorioCounts[key] = (consultorioCounts[key] || 0) + 1;
   });
+
+  // 2. Ordenar las claves de los consultorios de forma natural (Consultorio 1, 2, 3...)
+  const sortedKeys = Object.keys(consultorioCounts).sort((a, b) => {
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  const sortedValues = sortedKeys.map(key => consultorioCounts[key]);
 
   const ctxConsultorio = document.getElementById("chartConsultorio").getContext("2d");
   charts.consultorio = new Chart(ctxConsultorio, {
     type: 'bar',
     data: {
-      labels: Object.keys(consultorioCounts),
+      labels: sortedKeys,
       datasets: [{
         label: 'Cantidad de Reservas',
-        data: Object.values(consultorioCounts),
+        data: sortedValues,
         backgroundColor: '#6366F1',
         borderRadius: 6
       }]
