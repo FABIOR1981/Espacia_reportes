@@ -8,65 +8,21 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Estilos optimizados para impresión en una hoja A4 vertical -->
+  <!-- Estilos limpios para impresión en una hoja A4 -->
   <style>
     @media print {
-      @page {
-        size: A4 portrait;
-        margin: 10mm;
-      }
-      body {
-        background-color: white !important;
-        padding: 0 !important;
-        font-size: 10px !important;
-        color: #111 !important;
-      }
-      header button, #seccion-archivos, #searchInput {
-        display: none !important;
-      }
-      .max-w-7xl {
-        max-width: 100% !important;
-        space-y: 1rem !important;
-      }
-      header {
-        padding: 10px !important;
-        margin-bottom: 10px !important;
-      }
-      header h1 {
-        font-size: 15px !important;
-      }
-      header p {
-        font-size: 10px !important;
-      }
-      /* Tarjetas KPI en línea compacta */
-      .grid-cols-5 {
-        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-        gap: 6px !important;
-        margin-bottom: 10px !important;
-      }
-      .bg-white.p-5 {
-        padding: 6px 8px !important;
-      }
-      .text-2xl {
-        font-size: 16px !important;
-      }
-      /* Forzar que los dos gráficos vayan lado a lado (izquierda a derecha) en impresión */
-      .grid-cols-2 {
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 10px !important;
-        margin-bottom: 10px !important;
-      }
-      .grid-cols-2 > div {
-        flex: 1 !important;
-      }
-      .relative.h-72 {
-        height: 160px !important; /* Altura ideal para que encaje todo en la hoja */
-      }
-      .shadow {
-        box-shadow: none !important;
-        border: 1px solid #d1d5db !important;
-      }
+      @page { size: A4 portrait; margin: 10mm; }
+      body { background-color: white !important; padding: 0 !important; font-size: 10px !important; color: #111 !important; }
+      header button, #seccion-archivos, #searchInput { display: none !important; }
+      .max-w-7xl { max-width: 100% !important; }
+      header { padding: 10px !important; margin-bottom: 10px !important; }
+      .grid-cols-5 { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 6px !important; margin-bottom: 10px !important; }
+      .bg-white.p-5 { padding: 6px 8px !important; }
+      .text-2xl { font-size: 16px !important; }
+      .grid-cols-2 { display: flex !important; flex-direction: row !important; gap: 10px !important; margin-bottom: 10px !important; }
+      .grid-cols-2 > div { flex: 1 !important; }
+      .relative.h-72 { height: 160px !important; }
+      .shadow { box-shadow: none !important; border: 1px solid #d1d5db !important; }
     }
   </style>
 </head>
@@ -146,7 +102,7 @@
       </div>
     </div>
 
-    <!-- Listado de Archivos de Resguardo (Se oculta al imprimir) -->
+    <!-- Listado de Archivos de Resguardo -->
     <div id="seccion-archivos" class="bg-white rounded-xl shadow overflow-hidden">
       <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h3 class="text-lg font-semibold text-gray-700">Archivos de Resguardo en GitHub</h3>
@@ -183,9 +139,7 @@
         </div>
         <button onclick="cerrarModal()" class="text-indigo-200 hover:text-white text-2xl font-bold">&times;</button>
       </div>
-      <div class="p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50" id="modalContenido">
-        <!-- Inyección dinámica de reservas del archivo -->
-      </div>
+      <div class="p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50" id="modalContenido"></div>
       <div class="p-4 border-t bg-white flex justify-end">
         <button onclick="cerrarModal()" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors">
           Cerrar

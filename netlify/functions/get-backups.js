@@ -37,7 +37,6 @@ exports.handler = async function(event, context) {
     const files = await response.json();
     let jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
 
-    // Filtrar archivos según el rango de fechas en su nombre (ej: reservas-YYYY-MM-DD.json)
     if (fechaInicio || fechaFin) {
       jsonFiles = jsonFiles.filter(file => {
         const match = file.name.match(/\d{4}-\d{2}-\d{2}/);

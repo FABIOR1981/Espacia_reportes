@@ -155,24 +155,9 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     data: {
       labels: sortedKeys,
       datasets: [
-        {
-          label: 'Efectuadas',
-          data: dataEfectuadas,
-          backgroundColor: '#10B981',
-          borderRadius: 4
-        },
-        {
-          label: 'Canceladas por Usuario',
-          data: dataCancUser,
-          backgroundColor: '#F43F5E',
-          borderRadius: 4
-        },
-        {
-          label: 'Canceladas por Admin',
-          data: dataCancAdmin,
-          backgroundColor: '#BE123C',
-          borderRadius: 4
-        }
+        { label: 'Efectuadas', data: dataEfectuadas, backgroundColor: '#10B981', borderRadius: 4 },
+        { label: 'Canceladas por Usuario', data: dataCancUser, backgroundColor: '#F43F5E', borderRadius: 4 },
+        { label: 'Canceladas por Admin', data: dataCancAdmin, backgroundColor: '#BE123C', borderRadius: 4 }
       ]
     },
     options: { 
