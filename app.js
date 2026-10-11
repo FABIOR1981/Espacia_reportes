@@ -16,8 +16,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("beforeprint", () => {
+  Object.values(charts).forEach(c => c.resize());
   document.getElementById("print-fecha").textContent =
     `Generado: ${new Date().toLocaleString("es-UY")}`;
+});
+
+window.addEventListener("afterprint", () => {
+  Object.values(charts).forEach(c => c.resize());
 });
 
 async function inicializarDatos() {
