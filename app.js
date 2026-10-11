@@ -16,7 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("beforeprint", () => {
-  Object.values(charts).forEach(c => c.resize());
+  // Chrome calcula el layout de impresión después de este evento; se fija el tamaño explícito
+  Object.values(charts).forEach(c => c.resize(720, 400));
   document.getElementById("print-fecha").textContent =
     `Generado: ${new Date().toLocaleString("es-UY")}`;
 });
@@ -124,9 +125,31 @@ function processAndRenderData(backupsArray) {
   });
 }
 
+function crearTextura(color, tipo) {
+  const t = document.createElement("canvas");
+  t.width = t.height = 10;
+  const g = t.getContext("2d");
+  g.fillStyle = color;
+  g.fillRect(0, 0, 10, 10);
+  g.strokeStyle = g.fillStyle = "rgba(255,255,255,0.85)";
+  g.lineWidth = 2;
+  if (tipo === "puntos") {
+    g.beginPath(); g.arc(5, 5, 1.6, 0, Math.PI * 2); g.fill();
+  } else if (tipo === "rayas") {
+    g.beginPath(); g.moveTo(0, 10); g.lineTo(10, 0); g.stroke();
+  } else if (tipo === "cuadricula") {
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(10, 10); g.moveTo(10, 0); g.lineTo(0, 10); g.stroke();
+  }
+  return document.createElement("canvas").getContext("2d").createPattern(t, "repeat");
+}
+
 function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
+
+  const texEfectuada = crearTextura("#10B981", "puntos");
+  const texUser = crearTextura("#F43F5E", "rayas");
+  const texAdmin = crearTextura("#BE123C", "cuadricula");
 
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
@@ -135,7 +158,8 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
       labels: ['Efectuadas', 'Canceladas por Usuario', 'Canceladas por Admin'],
       datasets: [{
         data: [efectuadas, cancUser, cancAdmin],
-        backgroundColor: ['#10B981', '#F43F5E', '#BE123C'],
+        backgroundColor: [texEfectuada, texUser, texAdmin],
+        borderColor: '#ffffff',
         borderWidth: 2
       }]
     },
@@ -169,9 +193,9 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     data: {
       labels: sortedKeys,
       datasets: [
-        { label: 'Efectuadas', data: dataEfectuadas, backgroundColor: '#10B981', borderRadius: 4 },
-        { label: 'Canceladas por Usuario', data: dataCancUser, backgroundColor: '#F43F5E', borderRadius: 4 },
-        { label: 'Canceladas por Admin', data: dataCancAdmin, backgroundColor: '#BE123C', borderRadius: 4 }
+        { label: 'Efectuadas', data: dataEfectuadas, backgroundColor: texEfectuada, borderRadius: 4 },
+        { label: 'Canceladas por Usuario', data: dataCancUser, backgroundColor: texUser, borderRadius: 4 },
+        { label: 'Canceladas por Admin', data: dataCancAdmin, backgroundColor: texAdmin, borderRadius: 4 }
       ]
     },
     options: { 
