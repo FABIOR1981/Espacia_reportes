@@ -7,7 +7,13 @@ const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
 function aplicarEstiloGraficos(bn) {
   const fuente = bn ? texturas : COLORES;
   charts.estado.data.datasets[0].backgroundColor = fuente;
-  charts.consultorio.data.datasets.forEach((d, i) => { d.backgroundColor = fuente[i]; });
+  charts.estado.data.datasets[0].borderColor = bn ? '#000000' : '#ffffff';
+  charts.estado.data.datasets[0].borderWidth = bn ? 1.5 : 2;
+  charts.consultorio.data.datasets.forEach((d, i) => {
+    d.backgroundColor = fuente[i];
+    d.borderColor = bn ? '#000000' : 'transparent';
+    d.borderWidth = bn ? 1.2 : 0;
+  });
 }
 
 // Se capturan los gráficos con textura como imágenes estáticas para no depender del redibujado durante la impresión
@@ -155,20 +161,21 @@ function processAndRenderData(backupsArray) {
   });
 }
 
-function crearTextura(color, tipo) {
+function crearTextura(tipo) {
   const t = document.createElement("canvas");
   t.width = t.height = 10;
   const g = t.getContext("2d");
-  g.fillStyle = color;
+  g.fillStyle = "#ffffff";
   g.fillRect(0, 0, 10, 10);
-  g.strokeStyle = g.fillStyle = "rgba(255,255,255,0.85)";
-  g.lineWidth = 2;
+  g.strokeStyle = g.fillStyle = "#000000";
+  g.lineWidth = 1.2;
   if (tipo === "puntos") {
-    g.beginPath(); g.arc(5, 5, 1.6, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(5, 5, 1.2, 0, Math.PI * 2); g.fill();
   } else if (tipo === "rayas") {
-    g.beginPath(); g.moveTo(0, 10); g.lineTo(10, 0); g.stroke();
+    g.beginPath(); g.moveTo(-1, 11); g.lineTo(11, -1); g.stroke();
   } else if (tipo === "cuadricula") {
-    g.beginPath(); g.moveTo(0, 0); g.lineTo(10, 10); g.moveTo(10, 0); g.lineTo(0, 10); g.stroke();
+    g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(-1, -1); g.lineTo(11, 11); g.moveTo(11, -1); g.lineTo(-1, 11); g.stroke();
   }
   return document.createElement("canvas").getContext("2d").createPattern(t, "repeat");
 }
@@ -177,9 +184,9 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
 
-  const texEfectuada = crearTextura(COLORES[0], "puntos");
-  const texUser = crearTextura(COLORES[1], "rayas");
-  const texAdmin = crearTextura(COLORES[2], "cuadricula");
+  const texEfectuada = crearTextura("puntos");
+  const texUser = crearTextura("rayas");
+  const texAdmin = crearTextura("cuadricula");
   texturas = [texEfectuada, texUser, texAdmin];
 
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
