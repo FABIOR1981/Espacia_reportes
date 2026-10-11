@@ -1,5 +1,5 @@
 // app.js
-let cacheBackups = []; // Almacena todos los objetos JSON descargados
+let cacheBackups = [];
 let charts = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -59,24 +59,47 @@ function aplicarFiltroFechas() {
   inicializarDatos();
 }
 
+// Función auxiliar para determinar el subtipo de cancelación
+function clasificarReserva(r) {
+  if (r.estado !== "cancelada") return "efectuada";
+  
+  // Buscar en la descripción quién canceló
+  const descCancelacion = r.description.find(l => l.toLowerCase().includes("cancelada por:")) || "";
+  const matchEmail = r.description.find(l => l.toLowerCase().includes("email:")) || "";
+  
+  // Si canceló Gestor1 o Administrador o no coincide con el email del cliente, es Admin
+  const textoLower = descCancelacion.toLowerCase();
+  if (textoLower.includes("gestor") || textoLower.includes("admin") || textoLower.includes("administracion")) {
+    return "cancelada_admin";
+  }
+  
+  // Por defecto si canceló el mismo email o figura el nombre del usuario
+  return "cancelada_user";
+}
+
 function processAndRenderData(backupsArray) {
   let todasLasReservas = [];
 
   backupsArray.forEach(fileData => {
     if (fileData.reservas && Array.isArray(fileData.reservas)) {
-      todasLasReservas.push(...fileData.reservas);
+      fileData.reservas.forEach(r => {
+        r._tipoClasificado = clasificarReserva(r);
+        todasLasReservas.push(r);
+      });
     }
   });
 
   const total = todasLasReservas.length;
-  const efectuadas = todasLasReservas.filter(r => r.estado === "efectuada").length;
-  const canceladas = todasLasReservas.filter(r => r.estado === "cancelada").length;
+  const efectuadas = todasLasReservas.filter(r => r._tipoClasificado === "efectuada").length;
+  const cancUser = todasLasReservas.filter(r => r._tipoClasificado === "cancelada_user").length;
+  const cancAdmin = todasLasReservas.filter(r => r._tipoClasificado === "cancelada_admin").length;
 
   document.getElementById("kpi-total").textContent = total;
   document.getElementById("kpi-efectuadas").textContent = efectuadas;
-  document.getElementById("kpi-canceladas").textContent = canceladas;
+  document.getElementById("kpi-canc-user").textContent = cancUser;
+  document.getElementById("kpi-canc-admin").textContent = cancAdmin;
 
-  renderCharts(efectuadas, canceladas, todasLasReservas);
+  renderCharts(efectuadas, cancUser, cancAdmin, todasLasReservas);
   renderArchivosTable(backupsArray);
 
   const searchInput = document.getElementById("searchInput");
@@ -93,53 +116,80 @@ function processAndRenderData(backupsArray) {
   });
 }
 
-function renderCharts(efectuadas, canceladas, reservas) {
+function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
 
+  // 1. Gráfico de Anillo (Estados desglosados)
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
     type: 'doughnut',
     data: {
-      labels: ['Efectuadas', 'Canceladas'],
+      labels: ['Efectuadas', 'Canceladas por Usuario', 'Canceladas por Admin'],
       datasets: [{
-        data: [efectuadas, canceladas],
-        backgroundColor: ['#10B981', '#F43F5E'],
+        data: [efectuadas, cancUser, cancAdmin],
+        backgroundColor: ['#10B981', '#F43F5E', '#BE123C'],
         borderWidth: 2
       }]
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
 
-  const consultorioCounts = {};
+  // 2. Gráfico de Barras Apiladas por Consultorio
+  const consultoriosMap = {};
+  
   reservas.forEach(r => {
     const descConsultorio = r.description.find(line => line.includes("Consultorio:"));
     const cons = descConsultorio ? descConsultorio.split(":")[1].trim() : "Desconocido";
     const key = `Consultorio ${cons}`;
-    consultorioCounts[key] = (consultorioCounts[key] || 0) + 1;
+
+    if (!consultoriosMap[key]) {
+      consultoriosMap[key] = { efectuada: 0, cancelada_user: 0, cancelada_admin: 0 };
+    }
+    consultoriosMap[key][r._tipoClasificado]++;
   });
 
-  const sortedKeys = Object.keys(consultorioCounts).sort((a, b) => {
+  const sortedKeys = Object.keys(consultoriosMap).sort((a, b) => {
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
   });
-  const sortedValues = sortedKeys.map(key => consultorioCounts[key]);
+
+  const dataEfectuadas = sortedKeys.map(k => consultoriosMap[k].efectuada);
+  const dataCancUser = sortedKeys.map(k => consultoriosMap[k].cancelada_user);
+  const dataCancAdmin = sortedKeys.map(k => consultoriosMap[k].cancelada_admin);
 
   const ctxConsultorio = document.getElementById("chartConsultorio").getContext("2d");
   charts.consultorio = new Chart(ctxConsultorio, {
     type: 'bar',
     data: {
       labels: sortedKeys,
-      datasets: [{
-        label: 'Cantidad de Reservas',
-        data: sortedValues,
-        backgroundColor: '#6366F1',
-        borderRadius: 6
-      }]
+      datasets: [
+        {
+          label: 'Efectuadas',
+          data: dataEfectuadas,
+          backgroundColor: '#10B981',
+          borderRadius: 4
+        },
+        {
+          label: 'Canceladas por Usuario',
+          data: dataCancUser,
+          backgroundColor: '#F43F5E',
+          borderRadius: 4
+        },
+        {
+          label: 'Canceladas por Admin',
+          data: dataCancAdmin,
+          backgroundColor: '#BE123C',
+          borderRadius: 4
+        }
+      ]
     },
     options: { 
       responsive: true, 
       maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      scales: { 
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } 
+      }
     }
   });
 }
@@ -149,7 +199,7 @@ function renderArchivosTable(backupsArray) {
   tbody.innerHTML = "";
 
   if (backupsArray.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No se encontraron archivos de respaldo</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No se encontraron archivos de respaldo</td></tr>`;
     return;
   }
 
@@ -157,8 +207,9 @@ function renderArchivosTable(backupsArray) {
 
   sortedBackups.forEach((fileData) => {
     const reservas = fileData.reservas || [];
-    const efec = reservas.filter(r => r.estado === "efectuada").length;
-    const canc = reservas.filter(r => r.estado === "cancelada").length;
+    const efec = reservas.filter(r => r._tipoClasificado === "efectuada").length;
+    const cUser = reservas.filter(r => r._tipoClasificado === "cancelada_user").length;
+    const cAdmin = reservas.filter(r => r._tipoClasificado === "cancelada_admin").length;
     const totalReservas = reservas.length;
 
     const tr = document.createElement("tr");
@@ -168,7 +219,8 @@ function renderArchivosTable(backupsArray) {
       <td class="p-4 text-gray-500 text-xs">${new Date(fileData.fechaDelBackup).toLocaleString()}</td>
       <td class="p-4 text-center font-bold text-gray-700">${totalReservas}</td>
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${efec}</span></td>
-      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">${canc}</span></td>
+      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">${cUser}</span></td>
+      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">${cAdmin}</span></td>
       <td class="p-4 text-center">
         <button onclick="verDetalleArchivo('${fileData.fechaReservas}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-colors">
           🔍 Ver Detalle
@@ -180,7 +232,6 @@ function renderArchivosTable(backupsArray) {
 }
 
 function verDetalleArchivo(fechaReservas) {
-  // Buscar directamente por la fecha de reservas en el arreglo global
   const fileData = cacheBackups.find(b => b.fechaReservas === fechaReservas);
   if (!fileData) return;
 
@@ -194,10 +245,21 @@ function verDetalleArchivo(fechaReservas) {
     contenedor.innerHTML = `<p class="text-center text-gray-400 py-6">No hay reservas registradas en este archivo.</p>`;
   } else {
     fileData.reservas.forEach(r => {
+      const tipo = clasificarReserva(r);
       const emailLine = r.description.find(l => l.toLowerCase().includes("email:")) || "";
       const email = emailLine.split(":")[1] ? emailLine.split(":")[1].trim() : "No especificado";
       const consultorioLine = r.description.find(l => l.toLowerCase().includes("consultorio:")) || "";
       const consultorio = consultorioLine ? consultorioLine.split(":")[1].trim() : "-";
+
+      let badgeClass = "bg-emerald-100 text-emerald-800";
+      let badgeText = "EFECTUADA";
+      if (tipo === "cancelada_user") {
+        badgeClass = "bg-rose-100 text-rose-800";
+        badgeText = "CANC. USUARIO";
+      } else if (tipo === "cancelada_admin") {
+        badgeClass = "bg-red-100 text-red-900";
+        badgeText = "CANC. ADMIN";
+      }
 
       const card = document.createElement("div");
       card.className = "bg-white p-4 rounded-xl border shadow-sm space-y-2";
@@ -207,10 +269,8 @@ function verDetalleArchivo(fechaReservas) {
             <span class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">Consultorio ${consultorio}</span>
             <span class="font-bold text-gray-800 ml-2">${r.summary}</span>
           </div>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-            r.estado === 'efectuada' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-          }">
-            ${r.estado.toUpperCase()}
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">
+            ${badgeText}
           </span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
