@@ -1,6 +1,21 @@
 // app.js
 let cacheBackups = [];
 let charts = {};
+let texturas = [];
+let modoImpresionBN = false;
+const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
+
+function aplicarEstiloGraficos(bn) {
+  const fuente = bn ? texturas : COLORES;
+  if (!fuente.length) return;
+  charts.estado.data.datasets[0].backgroundColor = fuente;
+  charts.consultorio.data.datasets.forEach((d, i) => { d.backgroundColor = fuente[i]; });
+}
+
+function imprimirReporte(bn) {
+  modoImpresionBN = bn;
+  window.print();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const hoy = new Date();
@@ -18,12 +33,16 @@ document.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("beforeprint", () => {
   // Chrome calcula el layout de impresión después de este evento; se fija el tamaño explícito
   Object.values(charts).forEach(c => c.resize(720, 400));
+  aplicarEstiloGraficos(modoImpresionBN);
+  Object.values(charts).forEach(c => c.update('none'));
   document.getElementById("print-fecha").textContent =
     `Generado: ${new Date().toLocaleString("es-UY")}`;
 });
 
 window.addEventListener("afterprint", () => {
-  Object.values(charts).forEach(c => c.resize());
+  modoImpresionBN = false;
+  aplicarEstiloGraficos(false);
+  Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
 });
 
 async function inicializarDatos() {
@@ -147,9 +166,10 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
 
-  const texEfectuada = crearTextura("#10B981", "puntos");
-  const texUser = crearTextura("#F43F5E", "rayas");
-  const texAdmin = crearTextura("#BE123C", "cuadricula");
+  const texEfectuada = crearTextura(COLORES[0], "puntos");
+  const texUser = crearTextura(COLORES[1], "rayas");
+  const texAdmin = crearTextura(COLORES[2], "cuadricula");
+  texturas = [texEfectuada, texUser, texAdmin];
 
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
@@ -158,12 +178,12 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
       labels: ['Efectuadas', 'Canceladas por Usuario', 'Canceladas por Admin'],
       datasets: [{
         data: [efectuadas, cancUser, cancAdmin],
-        backgroundColor: [texEfectuada, texUser, texAdmin],
+        backgroundColor: COLORES,
         borderColor: '#ffffff',
         borderWidth: 2
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: { responsive: true, maintainAspectRatio: false, animation: false }
   });
 
   const consultoriosMap = {};
@@ -193,14 +213,15 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     data: {
       labels: sortedKeys,
       datasets: [
-        { label: 'Efectuadas', data: dataEfectuadas, backgroundColor: texEfectuada, borderRadius: 4 },
-        { label: 'Canceladas por Usuario', data: dataCancUser, backgroundColor: texUser, borderRadius: 4 },
-        { label: 'Canceladas por Admin', data: dataCancAdmin, backgroundColor: texAdmin, borderRadius: 4 }
+        { label: 'Efectuadas', data: dataEfectuadas, backgroundColor: COLORES[0], borderRadius: 4 },
+        { label: 'Canceladas por Usuario', data: dataCancUser, backgroundColor: COLORES[1], borderRadius: 4 },
+        { label: 'Canceladas por Admin', data: dataCancAdmin, backgroundColor: COLORES[2], borderRadius: 4 }
       ]
     },
     options: { 
       responsive: true, 
       maintainAspectRatio: false,
+      animation: false,
       scales: { 
         x: { stacked: true },
         y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } 

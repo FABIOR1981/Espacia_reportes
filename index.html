@@ -42,8 +42,11 @@
           Cargando...
         </div>
         <!-- Botón de Imprimir -->
-        <button onclick="window.print()" class="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
-          🖨️ Imprimir Reporte
+        <button onclick="imprimirReporte(false)" class="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+          🖨️ Imprimir Color
+        </button>
+        <button onclick="imprimirReporte(true)" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-800 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+          🖨️ Imprimir B/N
         </button>
       </div>
     </header>
