@@ -1,6 +1,4 @@
 // netlify/functions/get-backups.js
-const fetch = require('node-fetch');
-
 exports.handler = async function(event, context) {
   const owner = event.queryStringParameters.owner;
   const repo = event.queryStringParameters.repo;
@@ -14,13 +12,12 @@ exports.handler = async function(event, context) {
     };
   }
 
-  // Token seguro almacenado en las variables de entorno de Netlify
   const token = process.env.GITHUB_TOKEN_ESPACIA_REPORTES_BD;
-
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${folder}?ref=${branch}`;
   
   const headers = {
-    "User-Agent": "Netlify-Serverless-App"
+    "User-Agent": "Netlify-Serverless-App",
+    "Accept": "application/vnd.github.v3+json"
   };
 
   if (token) {
