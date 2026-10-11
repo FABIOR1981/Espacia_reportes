@@ -2,18 +2,32 @@
 let cacheBackups = [];
 let charts = {};
 let texturas = [];
-let modoImpresionBN = false;
 const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
 
 function aplicarEstiloGraficos(bn) {
   const fuente = bn ? texturas : COLORES;
-  if (!fuente.length) return;
   charts.estado.data.datasets[0].backgroundColor = fuente;
   charts.consultorio.data.datasets.forEach((d, i) => { d.backgroundColor = fuente[i]; });
 }
 
+// Se capturan los gráficos con textura como imágenes estáticas para no depender del redibujado durante la impresión
+function generarImagenesBN() {
+  aplicarEstiloGraficos(true);
+  Object.entries(charts).forEach(([clave, c]) => {
+    c.resize(720, 400);
+    c.update('none');
+    document.getElementById(`bn-${clave}`).src = c.toBase64Image('image/png', 1);
+  });
+  aplicarEstiloGraficos(false);
+  Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
+}
+
 function imprimirReporte(bn) {
-  modoImpresionBN = bn;
+  if (bn) {
+    if (!charts.estado || !charts.consultorio) return;
+    generarImagenesBN();
+  }
+  document.body.classList.toggle('print-bn', bn);
   window.print();
 }
 
@@ -33,15 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
 window.addEventListener("beforeprint", () => {
   // Chrome calcula el layout de impresión después de este evento; se fija el tamaño explícito
   Object.values(charts).forEach(c => c.resize(720, 400));
-  aplicarEstiloGraficos(modoImpresionBN);
-  Object.values(charts).forEach(c => c.update('none'));
   document.getElementById("print-fecha").textContent =
     `Generado: ${new Date().toLocaleString("es-UY")}`;
 });
 
 window.addEventListener("afterprint", () => {
-  modoImpresionBN = false;
-  aplicarEstiloGraficos(false);
+  document.body.classList.remove('print-bn');
   Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
 });
 

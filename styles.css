@@ -4,7 +4,20 @@
   display: none;
 }
 
+.img-bn {
+  display: none;
+}
+
 @media print {
+  body.print-bn .charts-grid canvas {
+    display: none !important;
+  }
+  body.print-bn .charts-grid .img-bn {
+    display: block !important;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
   .print-only {
     display: block !important;
     font-size: 11px;
