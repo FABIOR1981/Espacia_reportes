@@ -153,10 +153,9 @@ function renderArchivosTable(backupsArray) {
     return;
   }
 
-  // Ordenar archivos por fecha de reserva descendente
   const sortedBackups = [...backupsArray].sort((a, b) => b.fechaReservas.localeCompare(a.fechaReservas));
 
-  sortedBackups.forEach((fileData, index) => {
+  sortedBackups.forEach((fileData) => {
     const reservas = fileData.reservas || [];
     const efec = reservas.filter(r => r.estado === "efectuada").length;
     const canc = reservas.filter(r => r.estado === "cancelada").length;
@@ -171,7 +170,7 @@ function renderArchivosTable(backupsArray) {
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${efec}</span></td>
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">${canc}</span></td>
       <td class="p-4 text-center">
-        <button onclick="verDetalleArchivo(${index})" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-colors">
+        <button onclick="verDetalleArchivo('${fileData.fechaReservas}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-colors">
           🔍 Ver Detalle
         </button>
       </td>
@@ -180,8 +179,9 @@ function renderArchivosTable(backupsArray) {
   });
 }
 
-function verDetalleArchivo(index) {
-  const fileData = cacheBackups[index];
+function verDetalleArchivo(fechaReservas) {
+  // Buscar directamente por la fecha de reservas en el arreglo global
+  const fileData = cacheBackups.find(b => b.fechaReservas === fechaReservas);
   if (!fileData) return;
 
   document.getElementById("modalTitulo").textContent = `Resguardo del día: ${fileData.fechaReservas}`;
