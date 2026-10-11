@@ -8,6 +8,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Estilos para impresión limpia (oculta la tabla de archivos de GitHub al imprimir) -->
+  <style>
+    @media print {
+      body { background-color: white !important; padding: 0 !important; }
+      header button, #seccion-archivos, #searchInput { display: none !important; }
+      .shadow { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-6">
 
@@ -38,6 +46,10 @@
         <div id="status-badge" class="px-4 py-2 text-sm font-medium rounded-full bg-indigo-50 text-indigo-700">
           Cargando...
         </div>
+        <!-- Botón de Imprimir -->
+        <button onclick="window.print()" class="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+          🖨️ Imprimir Reporte
+        </button>
       </div>
     </header>
 
@@ -81,8 +93,8 @@
       </div>
     </div>
 
-    <!-- Listado de Archivos de Resguardo -->
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    <!-- Listado de Archivos de Resguardo (Se ocultará automáticamente al imprimir) -->
+    <div id="seccion-archivos" class="bg-white rounded-xl shadow overflow-hidden">
       <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h3 class="text-lg font-semibold text-gray-700">Archivos de Resguardo en GitHub</h3>
         <input type="text" id="searchInput" placeholder="Filtrar archivos por fecha..." class="px-4 py-2 border rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-indigo-500">

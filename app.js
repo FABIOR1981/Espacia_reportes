@@ -59,21 +59,15 @@ function aplicarFiltroFechas() {
   inicializarDatos();
 }
 
-// Función auxiliar para determinar el subtipo de cancelación
 function clasificarReserva(r) {
   if (r.estado !== "cancelada") return "efectuada";
   
-  // Buscar en la descripción quién canceló
   const descCancelacion = r.description.find(l => l.toLowerCase().includes("cancelada por:")) || "";
-  const matchEmail = r.description.find(l => l.toLowerCase().includes("email:")) || "";
-  
-  // Si canceló Gestor1 o Administrador o no coincide con el email del cliente, es Admin
   const textoLower = descCancelacion.toLowerCase();
+  
   if (textoLower.includes("gestor") || textoLower.includes("admin") || textoLower.includes("administracion")) {
     return "cancelada_admin";
   }
-  
-  // Por defecto si canceló el mismo email o figura el nombre del usuario
   return "cancelada_user";
 }
 
@@ -120,7 +114,6 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
 
-  // 1. Gráfico de Anillo (Estados desglosados)
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
     type: 'doughnut',
@@ -135,7 +128,6 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     options: { responsive: true, maintainAspectRatio: false }
   });
 
-  // 2. Gráfico de Barras Apiladas por Consultorio
   const consultoriosMap = {};
   
   reservas.forEach(r => {
