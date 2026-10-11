@@ -39,14 +39,27 @@
     max-width: 100% !important;
   }
   header {
-    padding: 6px 10px !important;
-    margin-bottom: 6px !important;
+    padding: 4px 10px !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+  }
+  header > div:not(:first-child),
+  header p:not(.print-only) {
+    display: none !important; /* Oculta filtros, estado y subtítulo */
+  }
+  header > div:first-child {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
   }
   header h1 {
-    font-size: 14px !important;
+    font-size: 15px !important;
   }
-  header p {
-    font-size: 9px !important;
+  header .print-only {
+    font-size: 10px !important;
+    margin: 0 !important;
+    white-space: nowrap;
   }
   /* Tarjetas KPI en una sola línea horizontal de 5 columnas */
   .kpi-grid {
@@ -80,7 +93,7 @@
     margin-bottom: 6px !important;
   }
   .charts-grid .relative {
-    height: 300px !important; /* Dos gráficos apilados caben en una A4 */
+    height: 400px !important; /* Dos gráficos apilados caben en una A4 */
     width: 100% !important;
   }
   .shadow {
