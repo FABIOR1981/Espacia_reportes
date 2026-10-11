@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Reservas - Espacia</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-6">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Encabezado -->
+    <header class="bg-white shadow rounded-xl p-6 flex flex-col md:flex-row justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-indigo-900">📊 Reporte Analítico de Reservas</h1>
+        <p class="text-sm text-gray-500">Monitoreo y estadísticas de consultorios</p>
+      </div>
+      <div class="flex items-center space-x-3 mt-4 md:mt-0">
+        <div id="status-badge" class="px-4 py-2 text-sm font-medium rounded-full">
+          Cargando...
+        </div>
+        <button id="toggleModeBtn" onclick="cambiarModoDemo()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+          Cambiar a GitHub Real
+        </button>
+      </div>
+    </header>
+
+    <!-- Tarjetas de Métricas (KPIs) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white p-6 rounded-xl shadow border-l-4 border-indigo-500">
+        <p class="text-sm text-gray-500 font-medium">Fuentes / Archivos</p>
+        <p id="kpi-files" class="text-3xl font-bold text-gray-800 mt-1">0</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
+        <p class="text-sm text-gray-500 font-medium">Total Reservas Registradas</p>
+        <p id="kpi-total" class="text-3xl font-bold text-gray-800 mt-1">0</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow border-l-4 border-emerald-500">
+        <p class="text-sm text-gray-500 font-medium">Reservas Efectuadas</p>
+        <p id="kpi-efectuadas" class="text-3xl font-bold text-emerald-600 mt-1">0</p>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow border-l-4 border-rose-500">
+        <p class="text-sm text-gray-500 font-medium">Reservas Canceladas</p>
+        <p id="kpi-canceladas" class="text-3xl font-bold text-rose-600 mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Gráfico 1: Estado de Reservas -->
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Estado de Reservas</h3>
+        <div class="relative h-72">
+          <canvas id="chartEstado"></canvas>
+        </div>
+      </div>
+      <!-- Gráfico 2: Reservas por Consultorio -->
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución por Consultorio</h3>
+        <div class="relative h-72">
+          <canvas id="chartConsultorio"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla Detallada -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h3 class="text-lg font-semibold text-gray-700">Detalle Consolidado de Reservas</h3>
+        <input type="text" id="searchInput" placeholder="Buscar por cliente, email o consultorio..." class="px-4 py-2 border rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50 text-xs uppercase text-gray-500 font-semibold border-b">
+              <th class="p-4">Fecha Reserva</th>
+              <th class="p-4">Consultorio</th>
+              <th class="p-4">Cliente / Asunto</th>
+              <th class="p-4">Email</th>
+              <th class="p-4">Horario</th>
+              <th class="p-4">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-reservas" class="divide-y divide-gray-100 text-sm">
+            <!-- Datos inyectados por JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
