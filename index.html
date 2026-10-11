@@ -16,7 +16,7 @@
     <header class="bg-white shadow rounded-xl p-6 flex flex-col lg:flex-row justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold text-indigo-900">📊 Reporte Analítico de Reservas</h1>
-        <p class="text-sm text-gray-500">Monitoreo y estadísticas directas desde GitHub</p>
+        <p class="text-sm text-gray-500">Auditoría por archivos de respaldo en GitHub</p>
       </div>
 
       <!-- Filtros de Fecha y Controles -->
@@ -44,7 +44,7 @@
     <!-- Tarjetas de Métricas (KPIs) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <div class="bg-white p-6 rounded-xl shadow border-l-4 border-indigo-500">
-        <p class="text-sm text-gray-500 font-medium">Fuentes / Archivos</p>
+        <p class="text-sm text-gray-500 font-medium">Archivos de Resguardo</p>
         <p id="kpi-files" class="text-3xl font-bold text-gray-800 mt-1">0</p>
       </div>
       <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
@@ -77,28 +77,49 @@
       </div>
     </div>
 
-    <!-- Tabla Detallada -->
+    <!-- Listado de Archivos de Resguardo -->
     <div class="bg-white rounded-xl shadow overflow-hidden">
       <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h3 class="text-lg font-semibold text-gray-700">Detalle Consolidado de Reservas</h3>
-        <input type="text" id="searchInput" placeholder="Buscar por cliente, email o consultorio..." class="px-4 py-2 border rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <h3 class="text-lg font-semibold text-gray-700">Archivos de Resguardo en GitHub</h3>
+        <input type="text" id="searchInput" placeholder="Filtrar archivos por fecha..." class="px-4 py-2 border rounded-lg text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-indigo-500">
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-50 text-xs uppercase text-gray-500 font-semibold border-b">
-              <th class="p-4">Fecha Reserva</th>
-              <th class="p-4">Consultorio</th>
-              <th class="p-4">Cliente / Asunto</th>
-              <th class="p-4">Email</th>
-              <th class="p-4">Horario</th>
-              <th class="p-4">Estado</th>
+              <th class="p-4">Fecha de Reservas</th>
+              <th class="p-4">Timestamp del Backup</th>
+              <th class="p-4 text-center">Total</th>
+              <th class="p-4 text-center">Efectuadas</th>
+              <th class="p-4 text-center">Canceladas</th>
+              <th class="p-4 text-center">Acción</th>
             </tr>
           </thead>
-          <tbody id="tabla-reservas" class="divide-y divide-gray-100 text-sm">
+          <tbody id="tabla-archivos" class="divide-y divide-gray-100 text-sm">
             <!-- Datos inyectados por JS -->
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Amigable para Ver el Detalle del Archivo -->
+  <div id="modalDetalle" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-6 border-b flex justify-between items-center bg-indigo-900 text-white">
+        <div>
+          <h3 id="modalTitulo" class="text-lg font-bold">Detalle del Resguardo</h3>
+          <p id="modalSubtitulo" class="text-xs text-indigo-200 mt-0.5">Información amigable del archivo JSON</p>
+        </div>
+        <button onclick="cerrarModal()" class="text-indigo-200 hover:text-white text-2xl font-bold">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50" id="modalContenido">
+        <!-- Inyección dinámica de reservas del archivo -->
+      </div>
+      <div class="p-4 border-t bg-white flex justify-end">
+        <button onclick="cerrarModal()" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors">
+          Cerrar
+        </button>
       </div>
     </div>
   </div>
