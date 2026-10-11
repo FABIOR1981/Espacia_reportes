@@ -8,7 +8,7 @@ exports.handler = async function(event, context) {
   if (!owner || !repo || !folder) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "Faltan parámetros obligatorios (owner, repo, folder)" })
+      body: JSON.stringify({ error: "Faltan parámetros obligatorios" })
     };
   }
 
@@ -25,27 +25,38 @@ exports.handler = async function(event, context) {
   }
 
   try {
+    // 1. Obtener la lista de archivos de la carpeta en GitHub
     const response = await fetch(apiUrl, { headers });
     
     if (!response.ok) {
       const errorData = await response.text();
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: `Error desde GitHub: ${response.statusText}`, details: errorData })
-      };
+      return { statusCode: response.status, body: JSON.stringify({ error: errorData }) };
     }
 
-    const data = await response.json();
+    const files = await response.json();
+    const jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
+
+    // 2. Descargar el contenido de cada archivo JSON de forma interna en Netlify
+    const allBackupsData = [];
+    for (const file of jsonFiles) {
+      const fileRes = await fetch(file.download_url, { headers });
+      if (fileRes.ok) {
+        const jsonData = await fileRes.json();
+        allBackupsData.push(jsonData);
+      }
+    }
+
+    // 3. Retornar todos los JSON ya procesados al frontend
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(allBackupsData)
     };
 
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error interno en la función", details: error.message })
+      body: JSON.stringify({ error: error.message })
     };
   }
 };

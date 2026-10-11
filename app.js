@@ -269,7 +269,7 @@ async function inicializarDatos() {
     processAndRenderData(allReservas);
 
   } else {
-    statusBadge.textContent = "Conectando con Netlify Function...";
+    statusBadge.textContent = "Sincronizando con GitHub vía Netlify...";
     statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
     document.getElementById("toggleModeBtn").textContent = "Cambiar a Modo Demo";
 
@@ -279,34 +279,29 @@ async function inicializarDatos() {
       const response = await fetch(functionUrl);
       if (!response.ok) throw new Error(`Error en Netlify Function: ${response.statusText}`);
 
-      const files = await response.json();
-      const jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
+      const backupsArray = await response.json();
+      
+      document.getElementById("kpi-files").textContent = backupsArray.length;
 
-      document.getElementById("kpi-files").textContent = jsonFiles.length;
-
-      if (jsonFiles.length === 0) {
-        statusBadge.textContent = "No hay archivos JSON en la ruta.";
+      if (backupsArray.length === 0) {
+        statusBadge.textContent = "No se encontraron archivos JSON en la ruta.";
         statusBadge.className = "px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-full";
         return;
       }
 
-      for (const file of jsonFiles) {
-        const res = await fetch(file.download_url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.reservas && Array.isArray(data.reservas)) {
-            allReservas.push(...data.reservas);
-          }
+      backupsArray.forEach(data => {
+        if (data.reservas && Array.isArray(data.reservas)) {
+          allReservas.push(...data.reservas);
         }
-      }
+      });
 
-      statusBadge.textContent = `Sincronizado de forma segura (${jsonFiles.length} archivos)`;
+      statusBadge.textContent = `Sincronizado (${backupsArray.length} archivos procesados)`;
       statusBadge.className = "px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full";
       processAndRenderData(allReservas);
 
     } catch (error) {
       console.error(error);
-      statusBadge.textContent = "Error de conexión con Netlify Function";
+      statusBadge.textContent = "Error de conexión con la función";
       statusBadge.className = "px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-full";
     }
   }
