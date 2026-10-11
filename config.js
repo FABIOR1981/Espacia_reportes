@@ -1,12 +1,11 @@
 // config.js
 const CONFIG = {
-  // Cambia a true para usar los datos del repositorio de GitHub configurado abajo
-  // Cambia a false para usar el modo demo precargado con el JSON de ejemplo
+  // false = usa los datos de ejemplo precargados localmente
+  // true = se conecta a la Netlify Function para leer el repositorio de GitHub real
   usarGitHubReal: false, 
 
-  githubOwner: "tu-usuario-o-organizacion",     // Ej: "tu-cuenta-github"
-  githubRepo: "nombre-del-repositorio",         // Ej: "espacia-backups"
-  githubBranch: "main",                         // Rama del repositorio (ej: main o master)
-  githubFolder: "backups/reservas",             // Subcarpeta donde están los archivos .json
-  githubToken: ""                               // Token opcional si el repo es privado
+  githubOwner: "tu-usuario-o-organizacion",     // Tu usuario o organización de GitHub
+  githubRepo: "nombre-del-repositorio",         // El repositorio donde están los JSON
+  githubBranch: "main",                         // La rama (ej: main o master)
+  githubFolder: "backups/reservas"              // La subcarpeta exacta dentro del repo
 };

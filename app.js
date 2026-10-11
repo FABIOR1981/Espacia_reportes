@@ -253,7 +253,6 @@ async function inicializarDatos() {
   allReservas = [];
 
   if (!CONFIG.usarGitHubReal) {
-    // Modo Demo Activo
     statusBadge.textContent = "Modo Demo (Datos Precargados)";
     statusBadge.className = "px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-full";
     document.getElementById("toggleModeBtn").textContent = "Cambiar a GitHub Real";
@@ -270,20 +269,15 @@ async function inicializarDatos() {
     processAndRenderData(allReservas);
 
   } else {
-    // Modo GitHub Real
-    statusBadge.textContent = "Conectando con GitHub...";
+    statusBadge.textContent = "Conectando con Netlify Function...";
     statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
     document.getElementById("toggleModeBtn").textContent = "Cambiar a Modo Demo";
 
     try {
-      const apiUrl = `https://api.github.com/repos/${CONFIG.githubOwner}/${CONFIG.githubRepo}/contents/${CONFIG.githubFolder}?ref=${CONFIG.githubBranch}`;
-      const headers = {};
-      if (CONFIG.githubToken) {
-        headers["Authorization"] = `Bearer ${CONFIG.githubToken}`;
-      }
-
-      const response = await fetch(apiUrl, { headers });
-      if (!response.ok) throw new Error(`Error en API de GitHub: ${response.statusText}`);
+      const functionUrl = `/.netlify/functions/get-backups?owner=${CONFIG.githubOwner}&repo=${CONFIG.githubRepo}&branch=${CONFIG.githubBranch}&folder=${CONFIG.githubFolder}`;
+      
+      const response = await fetch(functionUrl);
+      if (!response.ok) throw new Error(`Error en Netlify Function: ${response.statusText}`);
 
       const files = await response.json();
       const jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
@@ -306,13 +300,13 @@ async function inicializarDatos() {
         }
       }
 
-      statusBadge.textContent = `GitHub Sincronizado (${jsonFiles.length} archivos)`;
+      statusBadge.textContent = `Sincronizado de forma segura (${jsonFiles.length} archivos)`;
       statusBadge.className = "px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full";
       processAndRenderData(allReservas);
 
     } catch (error) {
       console.error(error);
-      statusBadge.textContent = "Error de conexión (Verifica config.js)";
+      statusBadge.textContent = "Error de conexión con Netlify Function";
       statusBadge.className = "px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-full";
     }
   }
@@ -335,9 +329,7 @@ function processAndRenderData(reservas) {
   renderCharts(efectuadas, canceladas, reservas);
   renderTable(reservas);
 
-  // Configurar Buscador
   const searchInput = document.getElementById("searchInput");
-  // Clonar para limpiar eventos previos
   const newSearchInput = searchInput.cloneNode(true);
   searchInput.parentNode.replaceChild(newSearchInput, searchInput);
 
@@ -353,11 +345,9 @@ function processAndRenderData(reservas) {
 }
 
 function renderCharts(efectuadas, canceladas, reservas) {
-  // Destruir gráficos anteriores si existen para evitar duplicados en memoria
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
 
-  // Gráfico 1: Estado (Doughnut)
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
     type: 'doughnut',
@@ -372,7 +362,6 @@ function renderCharts(efectuadas, canceladas, reservas) {
     options: { responsive: true, maintainAspectRatio: false }
   });
 
-  // Gráfico 2: Consultorios (Bar)
   const consultorioCounts = {};
   reservas.forEach(r => {
     const descConsultorio = r.description.find(line => line.includes("Consultorio:"));
