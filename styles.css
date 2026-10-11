@@ -1,6 +1,15 @@
 /* styles.css - Estilos personalizados y reglas de impresión */
 
+.print-only {
+  display: none;
+}
+
 @media print {
+  .print-only {
+    display: block !important;
+    font-size: 11px;
+    margin-top: 4px;
+  }
   @page {
     size: A4 portrait;
     margin: 6mm;

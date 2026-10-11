@@ -15,11 +15,20 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarDatos();
 });
 
+window.addEventListener("beforeprint", () => {
+  document.getElementById("print-fecha").textContent =
+    `Generado: ${new Date().toLocaleString("es-UY")}`;
+});
+
 async function inicializarDatos() {
   const statusBadge = document.getElementById("status-badge");
   const fechaInicio = document.getElementById("filtroFechaInicio").value;
   const fechaFin = document.getElementById("filtroFechaFin").value;
   cacheBackups = [];
+
+  const fmt = (iso) => iso ? iso.split('-').reverse().join('/') : '—';
+  document.getElementById("print-periodo").textContent =
+    `Período: ${fmt(fechaInicio)} al ${fmt(fechaFin)}`;
 
   statusBadge.textContent = "Sincronizando con GitHub...";
   statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
