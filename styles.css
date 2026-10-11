@@ -47,6 +47,8 @@
   }
   .kpi-grid > div {
     padding: 8px !important;
+    grid-column: span 1 !important; /* anula sm:col-span-2 de la última tarjeta */
+    min-width: 0 !important;
   }
   .kpi-grid .text-2xl {
     font-size: 20px !important;
