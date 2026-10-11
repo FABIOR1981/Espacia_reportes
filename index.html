@@ -8,12 +8,61 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Estilos para impresión limpia (oculta la tabla de archivos de GitHub al imprimir) -->
+  <!-- Estilos para ajustar absolutamente todo en UNA SOLA HOJA al imprimir -->
   <style>
     @media print {
-      body { background-color: white !important; padding: 0 !important; }
-      header button, #seccion-archivos, #searchInput { display: none !important; }
-      .shadow { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+      @page {
+        size: A4 landscape; /* Formato horizontal para aprovechar mejor el ancho y que entre todo */
+        margin: 8mm;
+      }
+      body {
+        background-color: white !important;
+        padding: 0 !important;
+        font-size: 11px !important;
+        color: #111 !important;
+      }
+      header button, #seccion-archivos, #searchInput {
+        display: none !important;
+      }
+      .max-w-7xl {
+        max-width: 100% !important;
+        space-y: 3rem !important;
+      }
+      header {
+        padding: 10px 15px !important;
+        margin-bottom: 8px !important;
+      }
+      header h1 {
+        font-size: 16px !important;
+      }
+      header p {
+        font-size: 11px !important;
+      }
+      /* Reducir tarjetas KPI y asegurar que entren en una sola línea */
+      .grid-cols-5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+        margin-bottom: 8px !important;
+      }
+      .bg-white.p-5 {
+        padding: 8px 10px !important;
+      }
+      .text-2xl {
+        font-size: 18px !important;
+      }
+      /* Ajustar gráficos para que quepan lado a lado sin desbordar */
+      .grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+        margin-bottom: 8px !important;
+      }
+      .relative.h-72 {
+        height: 180px !important; /* Altura compacta para impresión */
+      }
+      .shadow {
+        box-shadow: none !important;
+        border: 1px solid #d1d5db !important;
+      }
     }
   </style>
 </head>
@@ -93,7 +142,7 @@
       </div>
     </div>
 
-    <!-- Listado de Archivos de Resguardo (Se ocultará automáticamente al imprimir) -->
+    <!-- Listado de Archivos de Resguardo (Se oculta al imprimir) -->
     <div id="seccion-archivos" class="bg-white rounded-xl shadow overflow-hidden">
       <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h3 class="text-lg font-semibold text-gray-700">Archivos de Resguardo en GitHub</h3>
