@@ -13,18 +13,31 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
     <!-- Encabezado -->
-    <header class="bg-white shadow rounded-xl p-6 flex flex-col md:flex-row justify-between items-center">
+    <header class="bg-white shadow rounded-xl p-6 flex flex-col lg:flex-row justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold text-indigo-900">📊 Reporte Analítico de Reservas</h1>
-        <p class="text-sm text-gray-500">Monitoreo y estadísticas de consultorios</p>
+        <p class="text-sm text-gray-500">Monitoreo y estadísticas directas desde GitHub</p>
       </div>
-      <div class="flex items-center space-x-3 mt-4 md:mt-0">
-        <div id="status-badge" class="px-4 py-2 text-sm font-medium rounded-full">
+
+      <!-- Filtros de Fecha y Controles -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg border text-sm">
+          <label class="text-gray-600 font-medium text-xs">Desde:</label>
+          <input type="date" id="filtroFechaInicio" class="bg-transparent focus:outline-none text-gray-700">
+        </div>
+        <div class="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-lg border text-sm">
+          <label class="text-gray-600 font-medium text-xs">Hasta:</label>
+          <input type="date" id="filtroFechaFin" class="bg-transparent focus:outline-none text-gray-700">
+        </div>
+        <button onclick="aplicarFiltroFechas()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">
+          Consultar Período
+        </button>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <div id="status-badge" class="px-4 py-2 text-sm font-medium rounded-full bg-indigo-50 text-indigo-700">
           Cargando...
         </div>
-        <button id="toggleModeBtn" onclick="cambiarModoDemo()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
-          Cambiar a GitHub Real
-        </button>
       </div>
     </header>
 
@@ -50,14 +63,12 @@
 
     <!-- Gráficos -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Gráfico 1: Estado de Reservas -->
       <div class="bg-white p-6 rounded-xl shadow">
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Estado de Reservas</h3>
         <div class="relative h-72">
           <canvas id="chartEstado"></canvas>
         </div>
       </div>
-      <!-- Gráfico 2: Reservas por Consultorio -->
       <div class="bg-white p-6 rounded-xl shadow">
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución por Consultorio</h3>
         <div class="relative h-72">

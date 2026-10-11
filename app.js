@@ -1,314 +1,68 @@
 // app.js
-
-// Datos de ejemplo precargados (Modo Demo)
-const DEMO_DATA = [
-  {
-    "fechaDelBackup": "2026-09-23T03:00:19.379Z",
-    "fechaReservas": "2026-09-22",
-    "total": 15,
-    "reservas": [
-      {
-        "id": "ifbajjh6s6l698lvaluq79qnlg",
-        "summary": "C2: Rosa Israel",
-        "description": [
-          "Reserva para: Rosa Israel",
-          "Email: rosai@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 09:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T09:00:00-03:00",
-        "fin": "2026-09-22T10:00:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "enlgvgvkd4e5a1mq6tc1gfig58",
-        "summary": "C2: Santiago Perdomo",
-        "description": [
-          "Reserva para: Santiago Perdomo",
-          "Email: santiagop@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 14:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Santiago Perdomo"
-        ],
-        "inicio": "2026-09-22T14:00:00-03:00",
-        "fin": "2026-09-22T15:00:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "8n1vd6b5bimvgvhvefveo4r1lc",
-        "summary": "C3: Marcela Acuña",
-        "description": [
-          "Reserva para: Marcela Acuña",
-          "Email: marcelaa@espacia.com.uy",
-          "Consultorio: 3",
-          "Fecha: 2026-09-22",
-          "Hora: 14:30 hs. Intervalo: 90 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T14:30:00-03:00",
-        "fin": "2026-09-22T16:00:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "r264qpqfs2vu6526kog8kbdc20",
-        "summary": "Cancelada - C3: Marcela Acuña",
-        "description": [
-          "Reserva para: Marcela Acuña",
-          "Email: marcelaa@espacia.com.uy",
-          "Consultorio: 3",
-          "Fecha: 2026-09-22",
-          "Hora: 14:30 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1",
-          "Reserva Cancelada por: Gestor1 el 22/9/2026, 11:54:40 a. m."
-        ],
-        "inicio": "2026-09-22T14:30:00-03:00",
-        "fin": "2026-09-22T15:30:00-03:00",
-        "estado": "cancelada"
-      },
-      {
-        "id": "sm7q0q29bh17vkual49h36darg",
-        "summary": "Cancelada - C2: Daniela Pereyra",
-        "description": [
-          "Reserva para: Daniela Pereyra",
-          "Email: danielap@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 15:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1",
-          "Reserva Cancelada por: Gestor1 el 21/9/2026, 8:12:29 p. m."
-        ],
-        "inicio": "2026-09-22T15:00:00-03:00",
-        "fin": "2026-09-22T16:00:00-03:00",
-        "estado": "cancelada"
-      },
-      {
-        "id": "5p8khu56s26qd1qfo5u6um6s1c",
-        "summary": "C4: Mery Cáceres",
-        "description": [
-          "Reserva para: Mery Cáceres",
-          "Email: meryc@espacia.com.uy",
-          "Consultorio: 4",
-          "Fecha: 2026-09-22",
-          "Hora: 15:30 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T15:30:00-03:00",
-        "fin": "2026-09-22T16:30:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "l42r5bl9er9g6r8cj251lh4mc0",
-        "summary": "C2: Daniela Pereyra",
-        "description": [
-          "Reserva para: Daniela Pereyra",
-          "Email: danielap@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 16:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T16:00:00-03:00",
-        "fin": "2026-09-22T17:00:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "84j2grh5h1v2ldhhrs3mvgjku4",
-        "summary": "C4: Mery Cáceres",
-        "description": [
-          "Reserva para: Mery Cáceres",
-          "Email: meryc@espacia.com.uy",
-          "Consultorio: 4",
-          "Fecha: 2026-09-22",
-          "Hora: 16:30 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T16:30:00-03:00",
-        "fin": "2026-09-22T17:30:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "pkqoimu1104522b64grcgm4vu4",
-        "summary": "C2: Daniela Pereyra",
-        "description": [
-          "Reserva para: Daniela Pereyra",
-          "Email: danielap@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 17:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T17:00:00-03:00",
-        "fin": "2026-09-22T18:00:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "b50hj2r0dtgrbdojs4kkn3ldc4",
-        "summary": "C3: Ana Saracho",
-        "description": [
-          "Reserva para: Ana Saracho",
-          "Email: anas@espacia.com.uy",
-          "Consultorio: 3",
-          "Fecha: 2026-09-22",
-          "Hora: 17:30 hs. Intervalo: 60 min",
-          "Reserva realizada por: Ana Saracho"
-        ],
-        "inicio": "2026-09-22T17:30:00-03:00",
-        "fin": "2026-09-22T18:30:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "cfkjs7cout5s0lq1isf59dg3jc",
-        "summary": "Cancelada - C2: Daniela Pereyra",
-        "description": [
-          "Reserva para: Daniela Pereyra",
-          "Email: danielap@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 18:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1",
-          "Reserva Cancelada por: Gestor1 el 21/9/2026, 8:11:52 p. m."
-        ],
-        "inicio": "2026-09-22T18:00:00-03:00",
-        "fin": "2026-09-22T19:00:00-03:00",
-        "estado": "cancelada"
-      },
-      {
-        "id": "een3v4ck0pl5fbg3soc1tdo4fo",
-        "summary": "C2: Daniela Pereyra",
-        "description": [
-          "Reserva para: Daniela Pereyra",
-          "Email: danielap@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 18:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T18:00:00-03:00",
-        "fin": "2026-09-22T19:00:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "jhice6htl4srq570f8fs5qeen8",
-        "summary": "Cancelada - C2: Carla Bentancur",
-        "description": [
-          "Reserva para: Carla Bentancur",
-          "Email: carlab@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 18:00 hs. Intervalo: 60 min",
-          "Reserva realizada por: Carla Bentancur",
-          "Reserva Cancelada por: Carla Bentancur el 19/9/2026, 1:54:47 p. m."
-        ],
-        "inicio": "2026-09-22T18:00:00-03:00",
-        "fin": "2026-09-22T19:00:00-03:00",
-        "estado": "cancelada"
-      },
-      {
-        "id": "2fgpmhmccv6d845lc77k0f394c",
-        "summary": "C3: Carla Bentancur",
-        "description": [
-          "Reserva para: Carla Bentancur",
-          "Email: carlab@espacia.com.uy",
-          "Consultorio: 3",
-          "Fecha: 2026-09-22",
-          "Hora: 18:30 hs. Intervalo: 60 min",
-          "Reserva realizada por: Gestor1"
-        ],
-        "inicio": "2026-09-22T18:30:00-03:00",
-        "fin": "2026-09-22T19:30:00-03:00",
-        "estado": "efectuada"
-      },
-      {
-        "id": "jqsn3gsahslbuk31aeo48jriug",
-        "summary": "Cancelada - C2: Carla Bentancur",
-        "description": [
-          "Reserva para: Carla Bentancur",
-          "Email: carlab@espacia.com.uy",
-          "Consultorio: 2",
-          "Fecha: 2026-09-22",
-          "Hora: 18:30 hs. Intervalo: 60 min",
-          "Reserva realizada por: Carla Bentancur",
-          "Reserva Cancelada por: Gestor1 el 21/9/2026, 11:22:07 a. m."
-        ],
-        "inicio": "2026-09-22T18:30:00-03:00",
-        "fin": "2026-09-22T19:30:00-03:00",
-        "estado": "cancelada"
-      }
-    ]
-  }
-];
-
 let allReservas = [];
 let charts = {};
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Establecer por defecto los últimos 7 días
+  const hoy = new Date();
+  const hace7Dias = new Date();
+  hace7Dias.setDate(hoy.getDate() - 7);
+
+  const formatDate = (date) => date.toISOString().split('T')[0];
+
+  document.getElementById("filtroFechaInicio").value = formatDate(hace7Dias);
+  document.getElementById("filtroFechaFin").value = formatDate(hoy);
+
   inicializarDatos();
 });
 
 async function inicializarDatos() {
   const statusBadge = document.getElementById("status-badge");
+  const fechaInicio = document.getElementById("filtroFechaInicio").value;
+  const fechaFin = document.getElementById("filtroFechaFin").value;
   allReservas = [];
 
-  if (!CONFIG.usarGitHubReal) {
-    statusBadge.textContent = "Modo Demo (Datos Precargados)";
-    statusBadge.className = "px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-full";
-    document.getElementById("toggleModeBtn").textContent = "Cambiar a GitHub Real";
+  statusBadge.textContent = "Sincronizando con GitHub...";
+  statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
 
-    let archivosProcesados = 0;
-    DEMO_DATA.forEach(fileData => {
-      if (fileData.reservas && Array.isArray(fileData.reservas)) {
-        allReservas.push(...fileData.reservas);
-        archivosProcesados++;
+  try {
+    let functionUrl = `/.netlify/functions/get-backups?owner=${CONFIG.githubOwner}&repo=${CONFIG.githubRepo}&branch=${CONFIG.githubBranch}&folder=${CONFIG.githubFolder}`;
+    
+    if (fechaInicio) functionUrl += `&fechaInicio=${fechaInicio}`;
+    if (fechaFin) functionUrl += `&fechaFin=${fechaFin}`;
+
+    const response = await fetch(functionUrl);
+    if (!response.ok) throw new Error(`Error en Netlify Function: ${response.statusText}`);
+
+    const backupsArray = await response.json();
+    
+    document.getElementById("kpi-files").textContent = backupsArray.length;
+
+    if (backupsArray.length === 0) {
+      statusBadge.textContent = "No hay archivos en el período seleccionado.";
+      statusBadge.className = "px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-full";
+      processAndRenderData([]);
+      return;
+    }
+
+    backupsArray.forEach(data => {
+      if (data.reservas && Array.isArray(data.reservas)) {
+        allReservas.push(...data.reservas);
       }
     });
 
-    document.getElementById("kpi-files").textContent = archivosProcesados;
+    statusBadge.textContent = `Sincronizado (${backupsArray.length} archivos)`;
+    statusBadge.className = "px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full";
     processAndRenderData(allReservas);
 
-  } else {
-    statusBadge.textContent = "Sincronizando con GitHub vía Netlify...";
-    statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
-    document.getElementById("toggleModeBtn").textContent = "Cambiar a Modo Demo";
-
-    try {
-      const functionUrl = `/.netlify/functions/get-backups?owner=${CONFIG.githubOwner}&repo=${CONFIG.githubRepo}&branch=${CONFIG.githubBranch}&folder=${CONFIG.githubFolder}`;
-      
-      const response = await fetch(functionUrl);
-      if (!response.ok) throw new Error(`Error en Netlify Function: ${response.statusText}`);
-
-      const backupsArray = await response.json();
-      
-      document.getElementById("kpi-files").textContent = backupsArray.length;
-
-      if (backupsArray.length === 0) {
-        statusBadge.textContent = "No se encontraron archivos JSON en la ruta.";
-        statusBadge.className = "px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-full";
-        return;
-      }
-
-      backupsArray.forEach(data => {
-        if (data.reservas && Array.isArray(data.reservas)) {
-          allReservas.push(...data.reservas);
-        }
-      });
-
-      statusBadge.textContent = `Sincronizado (${backupsArray.length} archivos procesados)`;
-      statusBadge.className = "px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full";
-      processAndRenderData(allReservas);
-
-    } catch (error) {
-      console.error(error);
-      statusBadge.textContent = "Error de conexión con la función";
-      statusBadge.className = "px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-full";
-    }
+  } catch (error) {
+    console.error(error);
+    statusBadge.textContent = "Error de conexión con la función";
+    statusBadge.className = "px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-full";
   }
 }
 
-function cambiarModoDemo() {
-  CONFIG.usarGitHubReal = !CONFIG.usarGitHubReal;
+function aplicarFiltroFechas() {
   inicializarDatos();
 }
 
@@ -389,7 +143,7 @@ function renderTable(reservas) {
   tbody.innerHTML = "";
 
   if (reservas.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No se encontraron registros</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No se encontraron registros para este período</td></tr>`;
     return;
   }
 

@@ -4,6 +4,8 @@ exports.handler = async function(event, context) {
   const repo = event.queryStringParameters.repo;
   const branch = event.queryStringParameters.branch || 'main';
   const folder = event.queryStringParameters.folder;
+  const fechaInicio = event.queryStringParameters.fechaInicio;
+  const fechaFin = event.queryStringParameters.fechaFin;
 
   if (!owner || !repo || !folder) {
     return {
@@ -25,7 +27,6 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // 1. Obtener la lista de archivos de la carpeta en GitHub
     const response = await fetch(apiUrl, { headers });
     
     if (!response.ok) {
@@ -34,19 +35,39 @@ exports.handler = async function(event, context) {
     }
 
     const files = await response.json();
-    const jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
+    let jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
 
-    // 2. Descargar el contenido de cada archivo JSON de forma interna en Netlify
+    // Filtrar archivos según el rango de fechas en su nombre (ej: reservas-YYYY-MM-DD.json)
+    if (fechaInicio || fechaFin) {
+      jsonFiles = jsonFiles.filter(file => {
+        const match = file.name.match(/\d{4}-\d{2}-\d{2}/);
+        if (!match) return true; 
+        const fileDate = match[0];
+        
+        if (fechaInicio && fileDate < fechaInicio) return false;
+        if (fechaFin && fileDate > fechaFin) return false;
+        return true;
+      });
+    }
+
     const allBackupsData = [];
     for (const file of jsonFiles) {
       const fileRes = await fetch(file.download_url, { headers });
       if (fileRes.ok) {
         const jsonData = await fileRes.json();
+        
+        if (fechaInicio || fechaFin) {
+          const fReserva = jsonData.fechaReservas;
+          if (fReserva) {
+            if (fechaInicio && fReserva < fechaInicio) continue;
+            if (fechaFin && fReserva > fechaFin) continue;
+          }
+        }
+
         allBackupsData.push(jsonData);
       }
     }
 
-    // 3. Retornar todos los JSON ya procesados al frontend
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
