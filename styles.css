@@ -40,7 +40,7 @@
   #seccion-archivos,
   #modalDetalle,
   #searchInput {
-    display: none !important; /* Oculta controles innecesarios al imprimir */
+    display: none !important;
   }
   html, body {
     -webkit-print-color-adjust: exact;
@@ -76,22 +76,22 @@
     margin: 0 !important;
     white-space: nowrap;
   }
-  /* Tarjetas KPI en una sola línea horizontal de 5 columnas */
+  /* Tarjetas KPI en una sola línea horizontal de 6 columnas */
   .kpi-grid {
     display: grid !important;
-    grid-template-columns: repeat(5, 1fr) !important;
+    grid-template-columns: repeat(6, 1fr) !important;
     gap: 6px !important;
   }
   .kpi-grid > div {
-    padding: 8px !important;
+    padding: 6px !important;
     grid-column: span 1 !important;
     min-width: 0 !important;
   }
-  .kpi-grid .text-2xl {
-    font-size: 20px !important;
+  .kpi-grid .text-xl {
+    font-size: 16px !important;
   }
   .kpi-grid .text-xs {
-    font-size: 10px !important;
+    font-size: 9px !important;
   }
   /* Donut y consultorios lado a lado */
   .charts-grid {

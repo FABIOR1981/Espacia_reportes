@@ -52,26 +52,30 @@
     </header>
 
     <!-- Tarjetas de Métricas (KPIs Desglosados) -->
-    <div class="kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-indigo-500">
+    <div class="kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div class="bg-white p-4 rounded-xl shadow border-l-4 border-indigo-500">
         <p class="text-xs text-gray-500 font-medium">Total Registradas</p>
-        <p id="kpi-total" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+        <p id="kpi-total" class="text-xl font-bold text-gray-800 mt-1">0</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-emerald-500">
-        <p class="text-xs text-gray-500 font-medium">Efectuadas</p>
-        <p id="kpi-efectuadas" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+      <div class="bg-white p-4 rounded-xl shadow border-l-4 border-emerald-500">
+        <p class="text-xs text-gray-500 font-medium">Efectuadas (Usuario)</p>
+        <p id="kpi-efec-user" class="text-xl font-bold text-emerald-600 mt-1">0</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-rose-400">
-        <p class="text-xs text-gray-500 font-medium">Canceladas por Usuario</p>
-        <p id="kpi-canc-user" class="text-2xl font-bold text-rose-500 mt-1">0</p>
+      <div class="bg-white p-4 rounded-xl shadow border-l-4 border-emerald-800">
+        <p class="text-xs text-gray-500 font-medium">Efectuadas (Admin)</p>
+        <p id="kpi-efec-admin" class="text-xl font-bold text-emerald-800 mt-1">0</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-rose-700">
-        <p class="text-xs text-gray-500 font-medium">Canceladas por Admin</p>
-        <p id="kpi-canc-admin" class="text-2xl font-bold text-rose-700 mt-1">0</p>
+      <div class="bg-white p-4 rounded-xl shadow border-l-4 border-rose-400">
+        <p class="text-xs text-gray-500 font-medium">Canceladas (Usuario)</p>
+        <p id="kpi-canc-user" class="text-xl font-bold text-rose-500 mt-1">0</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-blue-400 sm:col-span-2 lg:grid-cols-1">
-        <p class="text-xs text-gray-500 font-medium">Archivos de Resguardo</p>
-        <p id="kpi-files" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+      <div class="bg-white p-4 rounded-xl shadow border-l-4 border-rose-700">
+        <p class="text-xs text-gray-500 font-medium">Canceladas (Admin)</p>
+        <p id="kpi-canc-admin" class="text-xl font-bold text-rose-700 mt-1">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow border-l-4 border-blue-400">
+        <p class="text-xs text-gray-500 font-medium">Archivos Resguardo</p>
+        <p id="kpi-files" class="text-xl font-bold text-gray-800 mt-1">0</p>
       </div>
     </div>
 
@@ -111,9 +115,10 @@
               <th class="p-4">Fecha de Reservas</th>
               <th class="p-4">Timestamp del Backup</th>
               <th class="p-4 text-center">Total</th>
-              <th class="p-4 text-center">Efectuadas</th>
-              <th class="p-4 text-center">Canc. Usuario</th>
-              <th class="p-4 text-center">Canc. Admin</th>
+              <th class="p-4 text-center">Efec. (Usu)</th>
+              <th class="p-4 text-center">Efec. (Adm)</th>
+              <th class="p-4 text-center">Canc. (Usu)</th>
+              <th class="p-4 text-center">Canc. (Adm)</th>
               <th class="p-4 text-center">Acción</th>
             </tr>
           </thead>

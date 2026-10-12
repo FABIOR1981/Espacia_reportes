@@ -2,9 +2,10 @@
 let cacheBackups = [];
 let charts = {};
 let texturas = [];
-const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
 
-// Variables para paginación de la tabla de archivos
+// Paleta: 0: Efec Usuario (#10B981), 1: Efec Admin (#047857), 2: Canc Usuario (#F43F5E), 3: Canc Admin (#BE123C)
+const COLORES = ['#10B981', '#047857', '#F43F5E', '#BE123C'];
+
 let paginaActualArchivos = 1;
 const elementosPorPagina = 10;
 let backupsFiltradosActuales = [];
@@ -26,12 +27,17 @@ function crearTextura(tipo) {
   } else if (tipo === "cuadricula") {
     g.lineWidth = 1.6;
     g.beginPath(); g.moveTo(-1, -1); g.lineTo(11, 11); g.moveTo(11, -1); g.lineTo(-1, 11); g.stroke();
+  } else if (tipo === "diagonal") {
+    g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(0, 5); g.lineTo(5, 10); g.moveTo(5, 0); g.lineTo(10, 5); g.stroke();
   }
   return document.createElement("canvas").getContext("2d").createPattern(t, "repeat");
 }
 
 function aplicarEstiloGraficos(bn) {
-  const fuente = bn ? texturas : COLORES;
+  // 4 fuentes de texturas o colores
+  const fuente = bn ? [crearTextura("puntos"), crearTextura("rayas"), crearTextura("cuadricula"), crearTextura("diagonal")] : COLORES;
+  
   if (charts.estado) {
     const ds = charts.estado.data.datasets[0];
     ds.backgroundColor = fuente;
@@ -45,7 +51,6 @@ function aplicarEstiloGraficos(bn) {
       d.borderWidth = bn ? 1.2 : 0;
     });
   }
-  // Aplicar a todos los gráficos de profesionales por bloques
   Object.keys(charts).forEach(clave => {
     if (clave.startsWith('profesionales_')) {
       charts[clave].data.datasets.forEach((d, i) => {
@@ -181,14 +186,22 @@ function extraerProfesional(r) {
 }
 
 function clasificarReserva(r) {
-  if (r.estado !== "cancelada") return "efectuada";
-  const descCancelacion = r.description.find(l => l.toLowerCase().includes("cancelada por:")) || "";
-  const textoLower = descCancelacion.toLowerCase();
-  
-  if (textoLower.includes("gestor") || textoLower.includes("admin") || textoLower.includes("administracion")) {
-    return "cancelada_admin";
+  if (r.estado === "cancelada") {
+    const descCancelacion = r.description.find(l => l.toLowerCase().includes("cancelada por:")) || "";
+    const textoLower = descCancelacion.toLowerCase();
+    if (textoLower.includes("gestor") || textoLower.includes("admin") || textoLower.includes("administracion")) {
+      return "cancelada_admin";
+    }
+    return "cancelada_user";
   }
-  return "cancelada_user";
+
+  // Si no está cancelada, es efectuada. Evaluamos si fue hecha por admin o usuario
+  const creadaPor = r.description.find(l => l.toLowerCase().includes("creada por:") || l.toLowerCase().includes("reservado por:")) || "";
+  const textoCreacionLower = creadaPor.toLowerCase();
+  if (textoCreacionLower.includes("gestor") || textoCreacionLower.includes("admin") || textoCreacionLower.includes("administracion")) {
+    return "efectuada_admin";
+  }
+  return "efectuada_user";
 }
 
 function processAndRenderData(backupsArray) {
@@ -205,18 +218,19 @@ function processAndRenderData(backupsArray) {
   });
 
   const total = todasLasReservas.length;
-  const efectuadas = todasLasReservas.filter(r => r._tipoClasificado === "efectuada").length;
+  const efecUser = todasLasReservas.filter(r => r._tipoClasificado === "efectuada_user").length;
+  const efecAdmin = todasLasReservas.filter(r => r._tipoClasificado === "efectuada_admin").length;
   const cancUser = todasLasReservas.filter(r => r._tipoClasificado === "cancelada_user").length;
   const cancAdmin = todasLasReservas.filter(r => r._tipoClasificado === "cancelada_admin").length;
 
   document.getElementById("kpi-total").textContent = total;
-  document.getElementById("kpi-efectuadas").textContent = efectuadas;
+  document.getElementById("kpi-efec-user").textContent = efecUser;
+  document.getElementById("kpi-efec-admin").textContent = efecAdmin;
   document.getElementById("kpi-canc-user").textContent = cancUser;
   document.getElementById("kpi-canc-admin").textContent = cancAdmin;
 
-  renderCharts(efectuadas, cancUser, cancAdmin, todasLasReservas);
+  renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, todasLasReservas);
 
-  // Inicializar filtrado y paginación de archivos
   backupsFiltradosActuales = [...backupsArray].sort((a, b) => b.fechaReservas.localeCompare(a.fechaReservas));
   paginaActualArchivos = 1;
   renderArchivosTablePaginated();
@@ -237,11 +251,10 @@ function processAndRenderData(backupsArray) {
   });
 }
 
-function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
+function renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
 
-  // Limpiar gráficos anteriores de profesionales
   Object.keys(charts).forEach(k => {
     if (k.startsWith('profesionales_')) {
       charts[k].destroy();
@@ -249,16 +262,14 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     }
   });
 
-  texturas = [crearTextura("puntos"), crearTextura("rayas"), crearTextura("cuadricula")];
-
   // 1. Gráfico de Anillo (Estado)
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
     type: 'doughnut',
     data: {
-      labels: ['Efectuadas', 'Canceladas por Usuario', 'Canceladas por Admin'],
+      labels: ['Efectuadas (Usuario)', 'Efectuadas (Admin)', 'Canceladas por Usuario', 'Canceladas por Admin'],
       datasets: [{
-        data: [efectuadas, cancUser, cancAdmin],
+        data: [efecUser, efecAdmin, cancUser, cancAdmin],
         backgroundColor: COLORES,
         borderWidth: 2
       }]
@@ -274,7 +285,7 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     const key = `Consultorio ${cons}`;
 
     if (!consultoriosMap[key]) {
-      consultoriosMap[key] = { efectuada: 0, cancelada_user: 0, cancelada_admin: 0 };
+      consultoriosMap[key] = { efectuada_user: 0, efectuada_admin: 0, cancelada_user: 0, cancelada_admin: 0 };
     }
     consultoriosMap[key][r._tipoClasificado]++;
   });
@@ -289,7 +300,8 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     data: {
       labels: sortedConsKeys,
       datasets: [
-        { label: 'Efectuadas', data: sortedConsKeys.map(k => consultoriosMap[k].efectuada), backgroundColor: '#10B981', borderRadius: 4 },
+        { label: 'Efectuadas (Usuario)', data: sortedConsKeys.map(k => consultoriosMap[k].efectuada_user), backgroundColor: '#10B981', borderRadius: 4 },
+        { label: 'Efectuadas (Admin)', data: sortedConsKeys.map(k => consultoriosMap[k].efectuada_admin), backgroundColor: '#047857', borderRadius: 4 },
         { label: 'Canceladas por Usuario', data: sortedConsKeys.map(k => consultoriosMap[k].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
         { label: 'Canceladas por Admin', data: sortedConsKeys.map(k => consultoriosMap[k].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
       ]
@@ -302,19 +314,19 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     }
   });
 
-  // 3. Gráficos de Profesionales divididos en bloques de 10 en 10
+  // 3. Gráficos de Profesionales divididos en bloques de 10
   const profMap = {};
   reservas.forEach(r => {
     const prof = r._profesional;
     if (!profMap[prof]) {
-      profMap[prof] = { efectuada: 0, cancelada_user: 0, cancelada_admin: 0 };
+      profMap[prof] = { efectuada_user: 0, efectuada_admin: 0, cancelada_user: 0, cancelada_admin: 0 };
     }
     profMap[prof][r._tipoClasificado]++;
   });
 
   const sortedProfs = Object.keys(profMap).sort((a, b) => {
-    const totalA = profMap[a].efectuada + profMap[a].cancelada_user + profMap[a].cancelada_admin;
-    const totalB = profMap[b].efectuada + profMap[b].cancelada_user + profMap[b].cancelada_admin;
+    const totalA = profMap[a].efectuada_user + profMap[a].efectuada_admin + profMap[a].cancelada_user + profMap[a].cancelada_admin;
+    const totalB = profMap[b].efectuada_user + profMap[b].efectuada_admin + profMap[b].cancelada_user + profMap[b].cancelada_admin;
     return totalB - totalA;
   });
 
@@ -336,7 +348,7 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     cardDiv.className = "prof-card bg-white p-6 rounded-xl shadow";
     cardDiv.innerHTML = `
       <h3 class="text-lg font-semibold text-gray-700 mb-1">Actividad por Profesional (Ranking ${inicio + 1} al ${fin})</h3>
-      <p class="text-xs text-gray-500 mb-4">Bloque ${i + 1} de ${totalBloques} — Volumen de reservas efectuadas y cancelaciones</p>
+      <p class="text-xs text-gray-500 mb-4">Bloque ${i + 1} de ${totalBloques} — Efectuadas (Usuario/Admin) y Cancelaciones</p>
       <div class="relative h-96">
         <canvas id="chart-${chartKey}"></canvas>
         <img id="bn-${chartKey}" class="img-bn" alt="Actividad por Profesional Bloque ${i + 1}">
@@ -350,7 +362,8 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
       data: {
         labels: bloqueProfs,
         datasets: [
-          { label: 'Efectuadas', data: bloqueProfs.map(p => profMap[p].efectuada), backgroundColor: '#10B981', borderRadius: 4 },
+          { label: 'Efectuadas (Usuario)', data: bloqueProfs.map(p => profMap[p].efectuada_user), backgroundColor: '#10B981', borderRadius: 4 },
+          { label: 'Efectuadas (Admin)', data: bloqueProfs.map(p => profMap[p].efectuada_admin), backgroundColor: '#047857', borderRadius: 4 },
           { label: 'Canceladas por Usuario', data: bloqueProfs.map(p => profMap[p].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
           { label: 'Canceladas por Admin', data: bloqueProfs.map(p => profMap[p].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
         ]
@@ -375,7 +388,7 @@ function renderArchivosTablePaginated() {
 
   const totalRegistros = backupsFiltradosActuales.length;
   if (totalRegistros === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No se encontraron archivos de respaldo</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No se encontraron archivos de respaldo</td></tr>`;
     document.getElementById("paginacion-info").textContent = "Mostrando 0 de 0 registros";
     document.getElementById("paginacion-actual").textContent = "Página 1 de 1";
     document.getElementById("btn-pagina-anterior").disabled = true;
@@ -393,7 +406,8 @@ function renderArchivosTablePaginated() {
 
   paginaItems.forEach((fileData) => {
     const reservas = fileData.reservas || [];
-    const efec = reservas.filter(r => r._tipoClasificado === "efectuada").length;
+    const efecU = reservas.filter(r => r._tipoClasificado === "efectuada_user").length;
+    const efecA = reservas.filter(r => r._tipoClasificado === "efectuada_admin").length;
     const cUser = reservas.filter(r => r._tipoClasificado === "cancelada_user").length;
     const cAdmin = reservas.filter(r => r._tipoClasificado === "cancelada_admin").length;
     const totalReservas = reservas.length;
@@ -404,9 +418,10 @@ function renderArchivosTablePaginated() {
       <td class="p-4 font-semibold text-indigo-900">${fileData.fechaReservas}</td>
       <td class="p-4 text-gray-500 text-xs">${new Date(fileData.fechaDelBackup).toLocaleString()}</td>
       <td class="p-4 text-center font-bold text-gray-700">${totalReservas}</td>
-      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${efec}</span></td>
+      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${efecU}</span></td>
+      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-900 text-white">${efecA}</span></td>
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">${cUser}</span></td>
-      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">${cAdmin}</span></td>
+      <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-900">${cAdmin}</span></td>
       <td class="p-4 text-center">
         <button onclick="verDetalleArchivo('${fileData.fechaReservas}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-colors">
           🔍 Ver Detalle
@@ -416,7 +431,6 @@ function renderArchivosTablePaginated() {
     tbody.appendChild(tr);
   });
 
-  // Actualizar controles de paginación
   document.getElementById("paginacion-info").textContent = `Mostrando registros ${inicio + 1} al ${fin} de ${totalRegistros}`;
   document.getElementById("paginacion-actual").textContent = `Página ${paginaActualArchivos} de ${totalPaginas}`;
   document.getElementById("btn-pagina-anterior").disabled = paginaActualArchivos === 1;
@@ -450,8 +464,11 @@ function verDetalleArchivo(fechaReservas) {
       const consultorio = consultorioLine ? consultorioLine.split(":")[1].trim() : "-";
 
       let badgeClass = "bg-emerald-100 text-emerald-800";
-      let badgeText = "EFECTUADA";
-      if (tipo === "cancelada_user") {
+      let badgeText = "EFECTUADA (USUARIO)";
+      if (tipo === "efectuada_admin") {
+        badgeClass = "bg-emerald-900 text-white";
+        badgeText = "EFECTUADA (ADMIN)";
+      } else if (tipo === "cancelada_user") {
         badgeClass = "bg-rose-100 text-rose-800";
         badgeText = "CANC. USUARIO";
       } else if (tipo === "cancelada_admin") {
