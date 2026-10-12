@@ -63,7 +63,10 @@ exports.handler = async function(event, context) {
           }
         }
 
-        allBackupsData.push(jsonData);
+        // --- FILTRO NUEVO: Solo incluir si tiene un array de reservas y contiene al menos 1 elemento ---
+        if (jsonData.reservas && Array.isArray(jsonData.reservas) && jsonData.reservas.length > 0) {
+          allBackupsData.push(jsonData);
+        }
       }
     }
 
