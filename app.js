@@ -53,12 +53,19 @@ function generarImagenesBN() {
 }
 
 function imprimirReporte(bn) {
-  if (bn) {
-    if (!charts.estado || !charts.consultorio || !charts.profesionales) return;
-    generarImagenesBN();
+  if (!bn) {
+    document.body.classList.remove('print-bn');
+    window.print();
+    return;
   }
-  document.body.classList.toggle('print-bn', bn);
-  window.print();
+  if (!charts.estado || !charts.consultorio || !charts.profesionales) return;
+  generarImagenesBN();
+  // El decode de un data URL es asíncrono: imprimir antes deja las imágenes en blanco
+  const imgs = [...document.querySelectorAll('.img-bn')];
+  Promise.all(imgs.map(img => img.decode())).then(() => {
+    document.body.classList.add('print-bn');
+    window.print();
+  });
 }
 
 window.addEventListener("beforeprint", () => {
