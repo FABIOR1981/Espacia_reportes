@@ -1,6 +1,76 @@
 // app.js
 let cacheBackups = [];
 let charts = {};
+let texturas = [];
+const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
+// Tamaño en px de cada gráfico en la hoja A4 (debe coincidir con el CSS de impresión)
+const TAMANOS_IMPRESION = { estado: [345, 260], consultorio: [345, 260], profesionales: [720, 420] };
+
+function crearTextura(tipo) {
+  const t = document.createElement("canvas");
+  t.width = t.height = 10;
+  const g = t.getContext("2d");
+  g.fillStyle = "#ffffff";
+  g.fillRect(0, 0, 10, 10);
+  g.strokeStyle = g.fillStyle = "#000000";
+  g.lineWidth = 1.2;
+  if (tipo === "puntos") {
+    g.beginPath(); g.arc(5, 5, 1.2, 0, Math.PI * 2); g.fill();
+  } else if (tipo === "rayas") {
+    g.beginPath(); g.moveTo(-1, 11); g.lineTo(11, -1); g.stroke();
+  } else if (tipo === "cuadricula") {
+    g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(-1, -1); g.lineTo(11, 11); g.moveTo(11, -1); g.lineTo(-1, 11); g.stroke();
+  }
+  return document.createElement("canvas").getContext("2d").createPattern(t, "repeat");
+}
+
+function aplicarEstiloGraficos(bn) {
+  const fuente = bn ? texturas : COLORES;
+  const ds = charts.estado.data.datasets[0];
+  ds.backgroundColor = fuente;
+  ds.borderColor = bn ? '#000000' : '#ffffff';
+  ds.borderWidth = bn ? 1.5 : 2;
+  [charts.consultorio, charts.profesionales].forEach(c => {
+    c.data.datasets.forEach((d, i) => {
+      d.backgroundColor = fuente[i];
+      d.borderColor = bn ? '#000000' : 'transparent';
+      d.borderWidth = bn ? 1.2 : 0;
+    });
+  });
+}
+
+// Se capturan los gráficos con textura como imágenes estáticas para no depender del redibujado durante la impresión
+function generarImagenesBN() {
+  aplicarEstiloGraficos(true);
+  Object.entries(charts).forEach(([clave, c]) => {
+    c.resize(...TAMANOS_IMPRESION[clave]);
+    c.update('none');
+    document.getElementById(`bn-${clave}`).src = c.toBase64Image('image/png', 1);
+  });
+  aplicarEstiloGraficos(false);
+  Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
+}
+
+function imprimirReporte(bn) {
+  if (bn) {
+    if (!charts.estado || !charts.consultorio || !charts.profesionales) return;
+    generarImagenesBN();
+  }
+  document.body.classList.toggle('print-bn', bn);
+  window.print();
+}
+
+window.addEventListener("beforeprint", () => {
+  Object.entries(charts).forEach(([clave, c]) => c.resize(...TAMANOS_IMPRESION[clave]));
+  document.getElementById("print-fecha").textContent =
+    `Generado: ${new Date().toLocaleString("es-UY")}`;
+});
+
+window.addEventListener("afterprint", () => {
+  document.body.classList.remove('print-bn');
+  Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   const hoy = new Date();
@@ -20,6 +90,10 @@ async function inicializarDatos() {
   const fechaInicio = document.getElementById("filtroFechaInicio").value;
   const fechaFin = document.getElementById("filtroFechaFin").value;
   cacheBackups = [];
+
+  const fmt = (iso) => iso ? iso.split('-').reverse().join('/') : '—';
+  document.getElementById("print-periodo").textContent =
+    `Período: ${fmt(fechaInicio)} al ${fmt(fechaFin)}`;
 
   statusBadge.textContent = "Sincronizando con GitHub...";
   statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
@@ -134,6 +208,8 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.consultorio) charts.consultorio.destroy();
   if (charts.profesionales) charts.profesionales.destroy();
 
+  texturas = [crearTextura("puntos"), crearTextura("rayas"), crearTextura("cuadricula")];
+
   // 1. Gráfico de Anillo
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
@@ -142,11 +218,11 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
       labels: ['Efectuadas', 'Canceladas por Usuario', 'Canceladas por Admin'],
       datasets: [{
         data: [efectuadas, cancUser, cancAdmin],
-        backgroundColor: ['#10B981', '#F43F5E', '#BE123C'],
+        backgroundColor: COLORES,
         borderWidth: 2
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: { responsive: true, maintainAspectRatio: false, animation: false }
   });
 
   // 2. Gráfico de Consultorios (Apilado)
@@ -180,6 +256,7 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     options: { 
       responsive: true, 
       maintainAspectRatio: false,
+      animation: false,
       scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }
     }
   });
@@ -216,6 +293,7 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
       indexAxis: 'y', // Barras horizontales para ver cómodamente los nombres de los profesionales
       responsive: true, 
       maintainAspectRatio: false,
+      animation: false,
       scales: { 
         x: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }, 
         y: { stacked: true } 
