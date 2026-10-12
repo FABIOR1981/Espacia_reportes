@@ -10,7 +10,11 @@ let paginaActualArchivos = 1;
 const elementosPorPagina = 10;
 let backupsFiltradosActuales = [];
 
-const TAMANOS_IMPRESION = { estado: [345, 260], consultorio: [345, 260] };
+const TAMANOS_IMPRESION = { 
+  estado: [345, 260], 
+  consultorio: [345, 260],
+  evolucion: [725, 280] 
+};
 
 function crearTextura(tipo) {
   const t = document.createElement("canvas");
@@ -35,7 +39,6 @@ function crearTextura(tipo) {
 }
 
 function aplicarEstiloGraficos(bn) {
-  // 4 fuentes de texturas o colores
   const fuente = bn ? [crearTextura("puntos"), crearTextura("rayas"), crearTextura("cuadricula"), crearTextura("diagonal")] : COLORES;
   
   if (charts.estado) {
@@ -46,6 +49,13 @@ function aplicarEstiloGraficos(bn) {
   }
   if (charts.consultorio) {
     charts.consultorio.data.datasets.forEach((d, i) => {
+      d.backgroundColor = fuente[i];
+      d.borderColor = bn ? '#000000' : 'transparent';
+      d.borderWidth = bn ? 1.2 : 0;
+    });
+  }
+  if (charts.evolucion) {
+    charts.evolucion.data.datasets.forEach((d, i) => {
       d.backgroundColor = fuente[i];
       d.borderColor = bn ? '#000000' : 'transparent';
       d.borderWidth = bn ? 1.2 : 0;
@@ -195,7 +205,7 @@ function clasificarReserva(r) {
     return "cancelada_user";
   }
 
-  // Extraer "Reserva para:" y "Reserva realizada por:" (o variantes)
+  // Comparamos "Reserva realizada por" / "Creada por" con "Reserva para:"
   const lineaPara = r.description.find(l => l.toLowerCase().includes("reserva para:")) || "";
   const lineaRealizada = r.description.find(l => 
     l.toLowerCase().includes("reserva realizada por:") || 
@@ -206,12 +216,12 @@ function clasificarReserva(r) {
   const nombrePara = lineaPara.includes(":") ? lineaPara.split(":")[1].trim().toLowerCase() : "";
   const nombreRealizada = lineaRealizada.includes(":") ? lineaRealizada.split(":")[1].trim().toLowerCase() : "";
 
-  // Si el nombre de "Reserva realizada por" es distinto del de "Reserva para:", la realizó la administración
+  // Si ambos campos existen y los nombres son distintos, la realizó la administración
   if (nombreRealizada && nombrePara && nombreRealizada !== nombrePara) {
     return "efectuada_admin";
   }
 
-  // Validación por palabras clave si no se detectaron ambos nombres con claridad
+  // Validación de respaldo por palabras clave
   const textoCreacionLower = lineaRealizada.toLowerCase();
   if (textoCreacionLower.includes("gestor") || textoCreacionLower.includes("admin") || textoCreacionLower.includes("administracion")) {
     return "efectuada_admin";
@@ -245,7 +255,7 @@ function processAndRenderData(backupsArray) {
   document.getElementById("kpi-canc-user").textContent = cancUser;
   document.getElementById("kpi-canc-admin").textContent = cancAdmin;
 
-  renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, todasLasReservas);
+  renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, todasLasReservas, backupsArray);
 
   backupsFiltradosActuales = [...backupsArray].sort((a, b) => b.fechaReservas.localeCompare(a.fechaReservas));
   paginaActualArchivos = 1;
@@ -267,9 +277,10 @@ function processAndRenderData(backupsArray) {
   });
 }
 
-function renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, reservas) {
+function renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, reservas, backupsArray) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
+  if (charts.evolucion) charts.evolucion.destroy();
 
   Object.keys(charts).forEach(k => {
     if (k.startsWith('profesionales_')) {
@@ -330,7 +341,52 @@ function renderCharts(efecUser, efecAdmin, cancUser, cancAdmin, reservas) {
     }
   });
 
-  // 3. Gráficos de Profesionales divididos en bloques de 10
+  // 3. Gráfico de Evolución Temporal (Mes a Mes)
+  const evolucionMap = {};
+  backupsArray.forEach(fileData => {
+    if (!fileData.fechaReservas) return;
+    const mesKey = fileData.fechaReservas.substring(0, 7); // YYYY-MM
+    if (!evolucionMap[mesKey]) {
+      evolucionMap[mesKey] = { efectuada_user: 0, efectuada_admin: 0, cancelada_user: 0, cancelada_admin: 0 };
+    }
+    if (fileData.reservas && Array.isArray(fileData.reservas)) {
+      fileData.reservas.forEach(r => {
+        const tipo = clasificarReserva(r);
+        if (evolucionMap[mesKey][tipo] !== undefined) {
+          evolucionMap[mesKey][tipo]++;
+        }
+      });
+    }
+  });
+
+  const sortedMeses = Object.keys(evolucionMap).sort();
+  const mesesLabels = sortedMeses.map(m => {
+    const [anio, mes] = m.split('-');
+    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${nombresMeses[parseInt(mes, 10) - 1]} ${anio}`;
+  });
+
+  const ctxEvolucion = document.getElementById("chartEvolucion").getContext("2d");
+  charts.evolucion = new Chart(ctxEvolucion, {
+    type: 'bar',
+    data: {
+      labels: mesesLabels.length > 0 ? mesesLabels : ['Sin datos'],
+      datasets: [
+        { label: 'Efectuadas (Usuario)', data: sortedMeses.map(m => evolucionMap[m].efectuada_user), backgroundColor: '#10B981', borderRadius: 4 },
+        { label: 'Efectuadas (Admin)', data: sortedMeses.map(m => evolucionMap[m].efectuada_admin), backgroundColor: '#047857', borderRadius: 4 },
+        { label: 'Canceladas por Usuario', data: sortedMeses.map(m => evolucionMap[m].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
+        { label: 'Canceladas por Admin', data: sortedMeses.map(m => evolucionMap[m].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // 4. Gráficos de Profesionales divididos en bloques de 10
   const profMap = {};
   reservas.forEach(r => {
     const prof = r._profesional;
@@ -422,10 +478,10 @@ function renderArchivosTablePaginated() {
 
   paginaItems.forEach((fileData) => {
     const reservas = fileData.reservas || [];
-    const efecU = reservas.filter(r => r._tipoClasificado === "efectuada_user").length;
-    const efecA = reservas.filter(r => r._tipoClasificado === "efectuada_admin").length;
-    const cUser = reservas.filter(r => r._tipoClasificado === "cancelada_user").length;
-    const cAdmin = reservas.filter(r => r._tipoClasificado === "cancelada_admin").length;
+    const efecU = reservas.filter(r => clasificarReserva(r) === "efectuada_user").length;
+    const efecA = reservas.filter(r => clasificarReserva(r) === "efectuada_admin").length;
+    const cUser = reservas.filter(r => clasificarReserva(r) === "cancelada_user").length;
+    const cAdmin = reservas.filter(r => clasificarReserva(r) === "cancelada_admin").length;
     const totalReservas = reservas.length;
 
     const tr = document.createElement("tr");

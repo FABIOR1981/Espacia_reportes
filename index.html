@@ -97,6 +97,20 @@
       </div>
     </div>
 
+    <!-- Gráfico de Evolución Temporal (Tendencia de Autogestión) -->
+    <div class="bg-white p-6 rounded-xl shadow">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700">Evolución Temporal de Reservas y Autogestión</h3>
+          <p class="text-xs text-gray-500">Tendencia histórica agrupada por mes para evaluar la adopción de autogestión</p>
+        </div>
+      </div>
+      <div class="relative h-80">
+        <canvas id="chartEvolucion"></canvas>
+        <img id="bn-evolucion" class="img-bn" alt="Evolución Temporal de Reservas">
+      </div>
+    </div>
+
     <!-- Contenedor Dinámico: Gráficos de Rendimiento por Profesional (Bloques de 10) -->
     <div id="profesionales-container" class="space-y-6">
       <!-- Inyectado dinámicamente desde app.js -->
