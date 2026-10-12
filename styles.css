@@ -60,7 +60,7 @@
   }
   header > div:not(:first-child),
   header p:not(.print-only) {
-    display: none !important; /* Oculta filtros, estado y subtítulo */
+    display: none !important;
   }
   header > div:first-child {
     display: flex !important;
@@ -84,7 +84,7 @@
   }
   .kpi-grid > div {
     padding: 8px !important;
-    grid-column: span 1 !important; /* anula sm:col-span-2 de la última tarjeta */
+    grid-column: span 1 !important;
     min-width: 0 !important;
   }
   .kpi-grid .text-2xl {
@@ -93,7 +93,7 @@
   .kpi-grid .text-xs {
     font-size: 10px !important;
   }
-  /* Donut y consultorios lado a lado; profesionales a ancho completo debajo */
+  /* Donut y consultorios lado a lado */
   .charts-grid {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
@@ -118,7 +118,7 @@
     width: 100% !important;
   }
   .prof-card .relative {
-    height: 420px !important;
+    height: 380px !important;
     width: 100% !important;
   }
   .shadow {

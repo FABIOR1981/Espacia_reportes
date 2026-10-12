@@ -3,8 +3,13 @@ let cacheBackups = [];
 let charts = {};
 let texturas = [];
 const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
-// Tamaño en px de cada gráfico en la hoja A4 (debe coincidir con el CSS de impresión)
-const TAMANOS_IMPRESION = { estado: [345, 260], consultorio: [345, 260], profesionales: [720, 420] };
+
+// Variables para paginación de la tabla de archivos
+let paginaActualArchivos = 1;
+const elementosPorPagina = 10;
+let backupsFiltradosActuales = [];
+
+const TAMANOS_IMPRESION = { estado: [345, 260], consultorio: [345, 260] };
 
 function crearTextura(tipo) {
   const t = document.createElement("canvas");
@@ -27,26 +32,45 @@ function crearTextura(tipo) {
 
 function aplicarEstiloGraficos(bn) {
   const fuente = bn ? texturas : COLORES;
-  const ds = charts.estado.data.datasets[0];
-  ds.backgroundColor = fuente;
-  ds.borderColor = bn ? '#000000' : '#ffffff';
-  ds.borderWidth = bn ? 1.5 : 2;
-  [charts.consultorio, charts.profesionales].forEach(c => {
-    c.data.datasets.forEach((d, i) => {
+  if (charts.estado) {
+    const ds = charts.estado.data.datasets[0];
+    ds.backgroundColor = fuente;
+    ds.borderColor = bn ? '#000000' : '#ffffff';
+    ds.borderWidth = bn ? 1.5 : 2;
+  }
+  if (charts.consultorio) {
+    charts.consultorio.data.datasets.forEach((d, i) => {
       d.backgroundColor = fuente[i];
       d.borderColor = bn ? '#000000' : 'transparent';
       d.borderWidth = bn ? 1.2 : 0;
     });
+  }
+  // Aplicar a todos los gráficos de profesionales por bloques
+  Object.keys(charts).forEach(clave => {
+    if (clave.startsWith('profesionales_')) {
+      charts[clave].data.datasets.forEach((d, i) => {
+        d.backgroundColor = fuente[i];
+        d.borderColor = bn ? '#000000' : 'transparent';
+        d.borderWidth = bn ? 1.2 : 0;
+      });
+    }
   });
 }
 
-// Se capturan los gráficos con textura como imágenes estáticas para no depender del redibujado durante la impresión
 function generarImagenesBN() {
   aplicarEstiloGraficos(true);
   Object.entries(charts).forEach(([clave, c]) => {
-    c.resize(...TAMANOS_IMPRESION[clave]);
-    c.update('none');
-    document.getElementById(`bn-${clave}`).src = c.toBase64Image('image/png', 1);
+    if (TAMANOS_IMPRESION[clave]) {
+      c.resize(...TAMANOS_IMPRESION[clave]);
+      c.update('none');
+      const imgElem = document.getElementById(`bn-${clave}`);
+      if (imgElem) imgElem.src = c.toBase64Image('image/png', 1);
+    } else if (clave.startsWith('profesionales_')) {
+      c.resize(725, 380);
+      c.update('none');
+      const imgElem = document.getElementById(`bn-${clave}`);
+      if (imgElem) imgElem.src = c.toBase64Image('image/png', 1);
+    }
   });
   aplicarEstiloGraficos(false);
   Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
@@ -58,9 +82,8 @@ function imprimirReporte(bn) {
     window.print();
     return;
   }
-  if (!charts.estado || !charts.consultorio || !charts.profesionales) return;
+  if (!charts.estado || !charts.consultorio) return;
   generarImagenesBN();
-  // El decode de un data URL es asíncrono: imprimir antes deja las imágenes en blanco
   const imgs = [...document.querySelectorAll('.img-bn')];
   Promise.all(imgs.map(img => img.decode())).then(() => {
     document.body.classList.add('print-bn');
@@ -69,7 +92,9 @@ function imprimirReporte(bn) {
 }
 
 window.addEventListener("beforeprint", () => {
-  Object.entries(charts).forEach(([clave, c]) => c.resize(...TAMANOS_IMPRESION[clave]));
+  Object.entries(charts).forEach(([clave, c]) => {
+    if (TAMANOS_IMPRESION[clave]) c.resize(...TAMANOS_IMPRESION[clave]);
+  });
   document.getElementById("print-fecha").textContent =
     `Generado: ${new Date().toLocaleString("es-UY")}`;
 });
@@ -140,9 +165,7 @@ function aplicarFiltroFechas() {
   inicializarDatos();
 }
 
-// Extraer el nombre del profesional desde el summary o description
 function extraerProfesional(r) {
-  // Ejemplo de summary: "C2: Rosa Israel" o "Cancelada - C3: Marcela Acuña"
   let summaryClean = r.summary.replace("Cancelada - ", "").trim();
   if (summaryClean.includes(":")) {
     const parts = summaryClean.split(":");
@@ -150,7 +173,6 @@ function extraerProfesional(r) {
       return parts[1].trim();
     }
   }
-  // Si falló, intentar buscar en la línea de descripción "Reserva para:"
   const lineaPara = r.description.find(l => l.toLowerCase().includes("reserva para:"));
   if (lineaPara) {
     return lineaPara.split(":")[1].trim();
@@ -160,7 +182,6 @@ function extraerProfesional(r) {
 
 function clasificarReserva(r) {
   if (r.estado !== "cancelada") return "efectuada";
-  
   const descCancelacion = r.description.find(l => l.toLowerCase().includes("cancelada por:")) || "";
   const textoLower = descCancelacion.toLowerCase();
   
@@ -194,7 +215,11 @@ function processAndRenderData(backupsArray) {
   document.getElementById("kpi-canc-admin").textContent = cancAdmin;
 
   renderCharts(efectuadas, cancUser, cancAdmin, todasLasReservas);
-  renderArchivosTable(backupsArray);
+
+  // Inicializar filtrado y paginación de archivos
+  backupsFiltradosActuales = [...backupsArray].sort((a, b) => b.fechaReservas.localeCompare(a.fechaReservas));
+  paginaActualArchivos = 1;
+  renderArchivosTablePaginated();
 
   const searchInput = document.getElementById("searchInput");
   const newSearchInput = searchInput.cloneNode(true);
@@ -202,22 +227,31 @@ function processAndRenderData(backupsArray) {
 
   newSearchInput.addEventListener("input", (e) => {
     const term = e.target.value.toLowerCase();
-    const filtered = backupsArray.filter(b => 
+    backupsFiltradosActuales = backupsArray.filter(b => 
       b.fechaReservas.toLowerCase().includes(term) ||
       b.fechaDelBackup.toLowerCase().includes(term)
-    );
-    renderArchivosTable(filtered);
+    ).sort((a, b) => b.fechaReservas.localeCompare(a.fechaReservas));
+    
+    paginaActualArchivos = 1;
+    renderArchivosTablePaginated();
   });
 }
 
 function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
-  if (charts.profesionales) charts.profesionales.destroy();
+
+  // Limpiar gráficos anteriores de profesionales
+  Object.keys(charts).forEach(k => {
+    if (k.startsWith('profesionales_')) {
+      charts[k].destroy();
+      delete charts[k];
+    }
+  });
 
   texturas = [crearTextura("puntos"), crearTextura("rayas"), crearTextura("cuadricula")];
 
-  // 1. Gráfico de Anillo
+  // 1. Gráfico de Anillo (Estado)
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
     type: 'doughnut',
@@ -268,7 +302,7 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     }
   });
 
-  // 3. Nuevo Gráfico por Profesional (Barras Horizontales Apiladas)
+  // 3. Gráficos de Profesionales divididos en bloques de 10 en 10
   const profMap = {};
   reservas.forEach(r => {
     const prof = r._profesional;
@@ -278,49 +312,86 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     profMap[prof][r._tipoClasificado]++;
   });
 
-  // Ordenar profesionales por volumen total de reservas descendente
   const sortedProfs = Object.keys(profMap).sort((a, b) => {
     const totalA = profMap[a].efectuada + profMap[a].cancelada_user + profMap[a].cancelada_admin;
     const totalB = profMap[b].efectuada + profMap[b].cancelada_user + profMap[b].cancelada_admin;
     return totalB - totalA;
   });
 
-  const ctxProf = document.getElementById("chartProfesionales").getContext("2d");
-  charts.profesionales = new Chart(ctxProf, {
-    type: 'bar',
-    data: {
-      labels: sortedProfs,
-      datasets: [
-        { label: 'Efectuadas', data: sortedProfs.map(p => profMap[p].efectuada), backgroundColor: '#10B981', borderRadius: 4 },
-        { label: 'Canceladas por Usuario', data: sortedProfs.map(p => profMap[p].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
-        { label: 'Canceladas por Admin', data: sortedProfs.map(p => profMap[p].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
-      ]
-    },
-    options: { 
-      indexAxis: 'y', // Barras horizontales para ver cómodamente los nombres de los profesionales
-      responsive: true, 
-      maintainAspectRatio: false,
-      animation: false,
-      scales: { 
-        x: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }, 
-        y: { stacked: true } 
+  const containerProfs = document.getElementById("profesionales-container");
+  containerProfs.innerHTML = "";
+
+  if (sortedProfs.length === 0) return;
+
+  const tamBloque = 10;
+  const totalBloques = Math.ceil(sortedProfs.length / tamBloque);
+
+  for (let i = 0; i < totalBloques; i++) {
+    const inicio = i * tamBloque;
+    const fin = Math.min(inicio + tamBloque, sortedProfs.length);
+    const bloqueProfs = sortedProfs.slice(inicio, fin);
+    const chartKey = `profesionales_${i}`;
+
+    const cardDiv = document.createElement("div");
+    cardDiv.className = "prof-card bg-white p-6 rounded-xl shadow";
+    cardDiv.innerHTML = `
+      <h3 class="text-lg font-semibold text-gray-700 mb-1">Actividad por Profesional (Ranking ${inicio + 1} al ${fin})</h3>
+      <p class="text-xs text-gray-500 mb-4">Bloque ${i + 1} de ${totalBloques} — Volumen de reservas efectuadas y cancelaciones</p>
+      <div class="relative h-96">
+        <canvas id="chart-${chartKey}"></canvas>
+        <img id="bn-${chartKey}" class="img-bn" alt="Actividad por Profesional Bloque ${i + 1}">
+      </div>
+    `;
+    containerProfs.appendChild(cardDiv);
+
+    const ctxProf = document.getElementById(`chart-${chartKey}`).getContext("2d");
+    charts[chartKey] = new Chart(ctxProf, {
+      type: 'bar',
+      data: {
+        labels: bloqueProfs,
+        datasets: [
+          { label: 'Efectuadas', data: bloqueProfs.map(p => profMap[p].efectuada), backgroundColor: '#10B981', borderRadius: 4 },
+          { label: 'Canceladas por Usuario', data: bloqueProfs.map(p => profMap[p].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
+          { label: 'Canceladas por Admin', data: bloqueProfs.map(p => profMap[p].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
+        ]
+      },
+      options: { 
+        indexAxis: 'y',
+        responsive: true, 
+        maintainAspectRatio: false,
+        animation: false,
+        scales: { 
+          x: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }, 
+          y: { stacked: true } 
+        }
       }
-    }
-  });
+    });
+  }
 }
 
-function renderArchivosTable(backupsArray) {
+function renderArchivosTablePaginated() {
   const tbody = document.getElementById("tabla-archivos");
   tbody.innerHTML = "";
 
-  if (backupsArray.length === 0) {
+  const totalRegistros = backupsFiltradosActuales.length;
+  if (totalRegistros === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No se encontraron archivos de respaldo</td></tr>`;
+    document.getElementById("paginacion-info").textContent = "Mostrando 0 de 0 registros";
+    document.getElementById("paginacion-actual").textContent = "Página 1 de 1";
+    document.getElementById("btn-pagina-anterior").disabled = true;
+    document.getElementById("btn-pagina-siguiente").disabled = true;
     return;
   }
 
-  const sortedBackups = [...backupsArray].sort((a, b) => b.fechaReservas.localeCompare(a.fechaReservas));
+  const totalPaginas = Math.ceil(totalRegistros / elementosPorPagina);
+  if (paginaActualArchivos > totalPaginas) paginaActualArchivos = totalPaginas;
+  if (paginaActualArchivos < 1) paginaActualArchivos = 1;
 
-  sortedBackups.forEach((fileData) => {
+  const inicio = (paginaActualArchivos - 1) * elementosPorPagina;
+  const fin = Math.min(inicio + elementosPorPagina, totalRegistros);
+  const paginaItems = backupsFiltradosActuales.slice(inicio, fin);
+
+  paginaItems.forEach((fileData) => {
     const reservas = fileData.reservas || [];
     const efec = reservas.filter(r => r._tipoClasificado === "efectuada").length;
     const cUser = reservas.filter(r => r._tipoClasificado === "cancelada_user").length;
@@ -344,6 +415,17 @@ function renderArchivosTable(backupsArray) {
     `;
     tbody.appendChild(tr);
   });
+
+  // Actualizar controles de paginación
+  document.getElementById("paginacion-info").textContent = `Mostrando registros ${inicio + 1} al ${fin} de ${totalRegistros}`;
+  document.getElementById("paginacion-actual").textContent = `Página ${paginaActualArchivos} de ${totalPaginas}`;
+  document.getElementById("btn-pagina-anterior").disabled = paginaActualArchivos === 1;
+  document.getElementById("btn-pagina-siguiente").disabled = paginaActualArchivos === totalPaginas;
+}
+
+function cambiarPaginaArchivos(direccion) {
+  paginaActualArchivos += direccion;
+  renderArchivosTablePaginated();
 }
 
 function verDetalleArchivo(fechaReservas) {

@@ -93,17 +93,12 @@
       </div>
     </div>
 
-    <!-- Nuevo Gráfico: Rendimiento y Comportamiento por Profesional -->
-    <div class="prof-card bg-white p-6 rounded-xl shadow">
-      <h3 class="text-lg font-semibold text-gray-700 mb-2">Actividad y Comportamiento por Profesional</h3>
-      <p class="text-xs text-gray-500 mb-4">Compara el volumen de reservas hechas, efectuadas y cancelaciones (propias vs administración)</p>
-      <div class="relative h-96">
-        <canvas id="chartProfesionales"></canvas>
-        <img id="bn-profesionales" class="img-bn" alt="Actividad por Profesional">
-      </div>
+    <!-- Contenedor Dinámico: Gráficos de Rendimiento por Profesional (Bloques de 10) -->
+    <div id="profesionales-container" class="space-y-6">
+      <!-- Inyectado dinámicamente desde app.js -->
     </div>
 
-    <!-- Listado de Archivos de Resguardo -->
+    <!-- Listado de Archivos de Resguardo con Paginación -->
     <div id="seccion-archivos" class="bg-white rounded-xl shadow overflow-hidden">
       <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h3 class="text-lg font-semibold text-gray-700">Archivos de Resguardo en GitHub</h3>
@@ -126,6 +121,19 @@
             <!-- Datos inyectados por JS -->
           </tbody>
         </table>
+      </div>
+      <!-- Controles de Paginación para la Tabla -->
+      <div class="p-4 border-t bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <span id="paginacion-info" class="text-xs text-gray-500">Mostrando 0 de 0 registros</span>
+        <div class="flex items-center space-x-2">
+          <button onclick="cambiarPaginaArchivos(-1)" id="btn-pagina-anterior" class="px-3 py-1.5 bg-white border hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            ← Anterior
+          </button>
+          <span id="paginacion-actual" class="text-xs font-semibold text-gray-700 px-2">Página 1 de 1</span>
+          <button onclick="cambiarPaginaArchivos(1)" id="btn-pagina-siguiente" class="px-3 py-1.5 bg-white border hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            Siguiente →
+          </button>
+        </div>
       </div>
     </div>
   </div>
