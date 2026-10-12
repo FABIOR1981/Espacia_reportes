@@ -1,41 +1,6 @@
 // app.js
 let cacheBackups = [];
 let charts = {};
-let texturas = [];
-const COLORES = ['#10B981', '#F43F5E', '#BE123C'];
-
-function aplicarEstiloGraficos(bn) {
-  const fuente = bn ? texturas : COLORES;
-  charts.estado.data.datasets[0].backgroundColor = fuente;
-  charts.estado.data.datasets[0].borderColor = bn ? '#000000' : '#ffffff';
-  charts.estado.data.datasets[0].borderWidth = bn ? 1.5 : 2;
-  charts.consultorio.data.datasets.forEach((d, i) => {
-    d.backgroundColor = fuente[i];
-    d.borderColor = bn ? '#000000' : 'transparent';
-    d.borderWidth = bn ? 1.2 : 0;
-  });
-}
-
-// Se capturan los gráficos con textura como imágenes estáticas para no depender del redibujado durante la impresión
-function generarImagenesBN() {
-  aplicarEstiloGraficos(true);
-  Object.entries(charts).forEach(([clave, c]) => {
-    c.resize(720, 400);
-    c.update('none');
-    document.getElementById(`bn-${clave}`).src = c.toBase64Image('image/png', 1);
-  });
-  aplicarEstiloGraficos(false);
-  Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
-}
-
-function imprimirReporte(bn) {
-  if (bn) {
-    if (!charts.estado || !charts.consultorio) return;
-    generarImagenesBN();
-  }
-  document.body.classList.toggle('print-bn', bn);
-  window.print();
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   const hoy = new Date();
@@ -50,27 +15,11 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarDatos();
 });
 
-window.addEventListener("beforeprint", () => {
-  // Chrome calcula el layout de impresión después de este evento; se fija el tamaño explícito
-  Object.values(charts).forEach(c => c.resize(720, 400));
-  document.getElementById("print-fecha").textContent =
-    `Generado: ${new Date().toLocaleString("es-UY")}`;
-});
-
-window.addEventListener("afterprint", () => {
-  document.body.classList.remove('print-bn');
-  Object.values(charts).forEach(c => { c.resize(); c.update('none'); });
-});
-
 async function inicializarDatos() {
   const statusBadge = document.getElementById("status-badge");
   const fechaInicio = document.getElementById("filtroFechaInicio").value;
   const fechaFin = document.getElementById("filtroFechaFin").value;
   cacheBackups = [];
-
-  const fmt = (iso) => iso ? iso.split('-').reverse().join('/') : '—';
-  document.getElementById("print-periodo").textContent =
-    `Período: ${fmt(fechaInicio)} al ${fmt(fechaFin)}`;
 
   statusBadge.textContent = "Sincronizando con GitHub...";
   statusBadge.className = "px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full";
@@ -110,6 +59,24 @@ function aplicarFiltroFechas() {
   inicializarDatos();
 }
 
+// Extraer el nombre del profesional desde el summary o description
+function extraerProfesional(r) {
+  // Ejemplo de summary: "C2: Rosa Israel" o "Cancelada - C3: Marcela Acuña"
+  let summaryClean = r.summary.replace("Cancelada - ", "").trim();
+  if (summaryClean.includes(":")) {
+    const parts = summaryClean.split(":");
+    if (parts.length > 1) {
+      return parts[1].trim();
+    }
+  }
+  // Si falló, intentar buscar en la línea de descripción "Reserva para:"
+  const lineaPara = r.description.find(l => l.toLowerCase().includes("reserva para:"));
+  if (lineaPara) {
+    return lineaPara.split(":")[1].trim();
+  }
+  return "Desconocido";
+}
+
 function clasificarReserva(r) {
   if (r.estado !== "cancelada") return "efectuada";
   
@@ -129,6 +96,7 @@ function processAndRenderData(backupsArray) {
     if (fileData.reservas && Array.isArray(fileData.reservas)) {
       fileData.reservas.forEach(r => {
         r._tipoClasificado = clasificarReserva(r);
+        r._profesional = extraerProfesional(r);
         todasLasReservas.push(r);
       });
     }
@@ -161,34 +129,12 @@ function processAndRenderData(backupsArray) {
   });
 }
 
-function crearTextura(tipo) {
-  const t = document.createElement("canvas");
-  t.width = t.height = 10;
-  const g = t.getContext("2d");
-  g.fillStyle = "#ffffff";
-  g.fillRect(0, 0, 10, 10);
-  g.strokeStyle = g.fillStyle = "#000000";
-  g.lineWidth = 1.2;
-  if (tipo === "puntos") {
-    g.beginPath(); g.arc(5, 5, 1.2, 0, Math.PI * 2); g.fill();
-  } else if (tipo === "rayas") {
-    g.beginPath(); g.moveTo(-1, 11); g.lineTo(11, -1); g.stroke();
-  } else if (tipo === "cuadricula") {
-    g.lineWidth = 1.6;
-    g.beginPath(); g.moveTo(-1, -1); g.lineTo(11, 11); g.moveTo(11, -1); g.lineTo(-1, 11); g.stroke();
-  }
-  return document.createElement("canvas").getContext("2d").createPattern(t, "repeat");
-}
-
 function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
   if (charts.estado) charts.estado.destroy();
   if (charts.consultorio) charts.consultorio.destroy();
+  if (charts.profesionales) charts.profesionales.destroy();
 
-  const texEfectuada = crearTextura("puntos");
-  const texUser = crearTextura("rayas");
-  const texAdmin = crearTextura("cuadricula");
-  texturas = [texEfectuada, texUser, texAdmin];
-
+  // 1. Gráfico de Anillo
   const ctxEstado = document.getElementById("chartEstado").getContext("2d");
   charts.estado = new Chart(ctxEstado, {
     type: 'doughnut',
@@ -196,16 +142,15 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
       labels: ['Efectuadas', 'Canceladas por Usuario', 'Canceladas por Admin'],
       datasets: [{
         data: [efectuadas, cancUser, cancAdmin],
-        backgroundColor: COLORES,
-        borderColor: '#ffffff',
+        backgroundColor: ['#10B981', '#F43F5E', '#BE123C'],
         borderWidth: 2
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, animation: false }
+    options: { responsive: true, maintainAspectRatio: false }
   });
 
+  // 2. Gráfico de Consultorios (Apilado)
   const consultoriosMap = {};
-  
   reservas.forEach(r => {
     const descConsultorio = r.description.find(line => line.includes("Consultorio:"));
     const cons = descConsultorio ? descConsultorio.split(":")[1].trim() : "Desconocido";
@@ -217,32 +162,63 @@ function renderCharts(efectuadas, cancUser, cancAdmin, reservas) {
     consultoriosMap[key][r._tipoClasificado]++;
   });
 
-  const sortedKeys = Object.keys(consultoriosMap).sort((a, b) => {
+  const sortedConsKeys = Object.keys(consultoriosMap).sort((a, b) => {
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
   });
-
-  const dataEfectuadas = sortedKeys.map(k => consultoriosMap[k].efectuada);
-  const dataCancUser = sortedKeys.map(k => consultoriosMap[k].cancelada_user);
-  const dataCancAdmin = sortedKeys.map(k => consultoriosMap[k].cancelada_admin);
 
   const ctxConsultorio = document.getElementById("chartConsultorio").getContext("2d");
   charts.consultorio = new Chart(ctxConsultorio, {
     type: 'bar',
     data: {
-      labels: sortedKeys,
+      labels: sortedConsKeys,
       datasets: [
-        { label: 'Efectuadas', data: dataEfectuadas, backgroundColor: COLORES[0], borderRadius: 4 },
-        { label: 'Canceladas por Usuario', data: dataCancUser, backgroundColor: COLORES[1], borderRadius: 4 },
-        { label: 'Canceladas por Admin', data: dataCancAdmin, backgroundColor: COLORES[2], borderRadius: 4 }
+        { label: 'Efectuadas', data: sortedConsKeys.map(k => consultoriosMap[k].efectuada), backgroundColor: '#10B981', borderRadius: 4 },
+        { label: 'Canceladas por Usuario', data: sortedConsKeys.map(k => consultoriosMap[k].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
+        { label: 'Canceladas por Admin', data: sortedConsKeys.map(k => consultoriosMap[k].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
       ]
     },
     options: { 
       responsive: true, 
       maintainAspectRatio: false,
-      animation: false,
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // 3. Nuevo Gráfico por Profesional (Barras Horizontales Apiladas)
+  const profMap = {};
+  reservas.forEach(r => {
+    const prof = r._profesional;
+    if (!profMap[prof]) {
+      profMap[prof] = { efectuada: 0, cancelada_user: 0, cancelada_admin: 0 };
+    }
+    profMap[prof][r._tipoClasificado]++;
+  });
+
+  // Ordenar profesionales por volumen total de reservas descendente
+  const sortedProfs = Object.keys(profMap).sort((a, b) => {
+    const totalA = profMap[a].efectuada + profMap[a].cancelada_user + profMap[a].cancelada_admin;
+    const totalB = profMap[b].efectuada + profMap[b].cancelada_user + profMap[b].cancelada_admin;
+    return totalB - totalA;
+  });
+
+  const ctxProf = document.getElementById("chartProfesionales").getContext("2d");
+  charts.profesionales = new Chart(ctxProf, {
+    type: 'bar',
+    data: {
+      labels: sortedProfs,
+      datasets: [
+        { label: 'Efectuadas', data: sortedProfs.map(p => profMap[p].efectuada), backgroundColor: '#10B981', borderRadius: 4 },
+        { label: 'Canceladas por Usuario', data: sortedProfs.map(p => profMap[p].cancelada_user), backgroundColor: '#F43F5E', borderRadius: 4 },
+        { label: 'Canceladas por Admin', data: sortedProfs.map(p => profMap[p].cancelada_admin), backgroundColor: '#BE123C', borderRadius: 4 }
+      ]
+    },
+    options: { 
+      indexAxis: 'y', // Barras horizontales para ver cómodamente los nombres de los profesionales
+      responsive: true, 
+      maintainAspectRatio: false,
       scales: { 
-        x: { stacked: true },
-        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } 
+        x: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }, 
+        y: { stacked: true } 
       }
     }
   });
@@ -300,6 +276,7 @@ function verDetalleArchivo(fechaReservas) {
   } else {
     fileData.reservas.forEach(r => {
       const tipo = clasificarReserva(r);
+      const prof = extraerProfesional(r);
       const emailLine = r.description.find(l => l.toLowerCase().includes("email:")) || "";
       const email = emailLine.split(":")[1] ? emailLine.split(":")[1].trim() : "No especificado";
       const consultorioLine = r.description.find(l => l.toLowerCase().includes("consultorio:")) || "";
@@ -328,6 +305,7 @@ function verDetalleArchivo(fechaReservas) {
           </span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
+          <div>👤 <strong>Profesional:</strong> ${prof}</div>
           <div>📧 <strong>Email:</strong> ${email}</div>
           <div>🕒 <strong>Horario:</strong> ${r.inicio.split("T")[1].substring(0,5)} - ${r.fin.split("T")[1].substring(0,5)} hs</div>
         </div>

@@ -18,8 +18,7 @@
     <header class="bg-white shadow rounded-xl p-6 flex flex-col lg:flex-row justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold text-indigo-900">📊 Reporte Analítico de Reservas</h1>
-        <p class="text-sm text-gray-500">Auditoría detallada por estados y cancelaciones</p>
-        <p class="print-only"><strong id="print-periodo"></strong> &nbsp;|&nbsp; <span id="print-fecha"></span></p>
+        <p class="text-sm text-gray-500">Auditoría detallada por estados, cancelaciones y profesionales</p>
       </div>
 
       <!-- Filtros de Fecha y Controles -->
@@ -42,17 +41,14 @@
           Cargando...
         </div>
         <!-- Botón de Imprimir -->
-        <button onclick="imprimirReporte(false)" class="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
-          🖨️ Imprimir Color
-        </button>
-        <button onclick="imprimirReporte(true)" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-800 border border-gray-800 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
-          🖨️ Imprimir B/N
+        <button onclick="window.print()" class="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+          🖨️ Imprimir Reporte
         </button>
       </div>
     </header>
 
     <!-- Tarjetas de Métricas (KPIs Desglosados) -->
-    <div class="kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <div class="bg-white p-5 rounded-xl shadow border-l-4 border-indigo-500">
         <p class="text-xs text-gray-500 font-medium">Total Registradas</p>
         <p id="kpi-total" class="text-2xl font-bold text-gray-800 mt-1">0</p>
@@ -69,27 +65,34 @@
         <p class="text-xs text-gray-500 font-medium">Canceladas por Admin</p>
         <p id="kpi-canc-admin" class="text-2xl font-bold text-rose-700 mt-1">0</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-blue-400 sm:col-span-2 lg:col-span-1">
+      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-blue-400 sm:col-span-2 lg:grid-cols-1">
         <p class="text-xs text-gray-500 font-medium">Archivos de Resguardo</p>
         <p id="kpi-files" class="text-2xl font-bold text-gray-800 mt-1">0</p>
       </div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="charts-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Gráficos Principales -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white p-6 rounded-xl shadow">
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Estado de Reservas</h3>
         <div class="relative h-72">
           <canvas id="chartEstado"></canvas>
-          <img id="bn-estado" class="img-bn" alt="Estado de Reservas">
         </div>
       </div>
       <div class="bg-white p-6 rounded-xl shadow">
         <h3 class="text-lg font-semibold text-gray-700 mb-4">Distribución por Consultorio (Apilada)</h3>
         <div class="relative h-72">
           <canvas id="chartConsultorio"></canvas>
-          <img id="bn-consultorio" class="img-bn" alt="Distribución por Consultorio">
         </div>
+      </div>
+    </div>
+
+    <!-- Nuevo Gráfico: Rendimiento y Comportamiento por Profesional -->
+    <div class="bg-white p-6 rounded-xl shadow">
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">Actividad y Comportamiento por Profesional</h3>
+      <p class="text-xs text-gray-500 mb-4">Compara el volumen de reservas hechas, efectuadas y cancelaciones (propias vs administración)</p>
+      <div class="relative h-96">
+        <canvas id="chartProfesionales"></canvas>
       </div>
     </div>
 
