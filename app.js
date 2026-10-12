@@ -195,12 +195,28 @@ function clasificarReserva(r) {
     return "cancelada_user";
   }
 
-  // Si no está cancelada, es efectuada. Evaluamos si fue hecha por admin o usuario
-  const creadaPor = r.description.find(l => l.toLowerCase().includes("creada por:") || l.toLowerCase().includes("reservado por:")) || "";
-  const textoCreacionLower = creadaPor.toLowerCase();
+  // Extraer "Reserva para:" y "Reserva realizada por:" (o variantes)
+  const lineaPara = r.description.find(l => l.toLowerCase().includes("reserva para:")) || "";
+  const lineaRealizada = r.description.find(l => 
+    l.toLowerCase().includes("reserva realizada por:") || 
+    l.toLowerCase().includes("creada por:") || 
+    l.toLowerCase().includes("reservado por:")
+  ) || "";
+
+  const nombrePara = lineaPara.includes(":") ? lineaPara.split(":")[1].trim().toLowerCase() : "";
+  const nombreRealizada = lineaRealizada.includes(":") ? lineaRealizada.split(":")[1].trim().toLowerCase() : "";
+
+  // Si el nombre de "Reserva realizada por" es distinto del de "Reserva para:", la realizó la administración
+  if (nombreRealizada && nombrePara && nombreRealizada !== nombrePara) {
+    return "efectuada_admin";
+  }
+
+  // Validación por palabras clave si no se detectaron ambos nombres con claridad
+  const textoCreacionLower = lineaRealizada.toLowerCase();
   if (textoCreacionLower.includes("gestor") || textoCreacionLower.includes("admin") || textoCreacionLower.includes("administracion")) {
     return "efectuada_admin";
   }
+
   return "efectuada_user";
 }
 
