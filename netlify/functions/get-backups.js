@@ -1,85 +1,99 @@
 // netlify/functions/get-backups.js
-exports.handler = async function(event, context) {
-  const owner = event.queryStringParameters.owner;
-  const repo = event.queryStringParameters.repo;
-  const branch = event.queryStringParameters.branch || 'main';
-  const folder = event.queryStringParameters.folder;
-  const fechaInicio = event.queryStringParameters.fechaInicio;
-  const fechaFin = event.queryStringParameters.fechaFin;
+// Lee los resguardos JSON del repo de datos y los devuelve filtrados por fecha.
+// El repo/carpeta/rama están fijos acá: el cliente NO puede elegirlos.
 
-  if (!owner || !repo || !folder) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Faltan parámetros obligatorios" })
-    };
+const PROPIETARIO = process.env.BACKUPS_OWNER || "fabior1981";
+const REPOSITORIO = process.env.BACKUPS_REPO || "bd";
+const RAMA = process.env.BACKUPS_BRANCH || "main";
+const CARPETA = process.env.BACKUPS_FOLDER || "espacia/backups";
+
+const TAMANO_LOTE = 10; // descargas simultáneas
+const REGEX_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+const responder = (statusCode, datos, extra = {}) => ({
+  statusCode,
+  headers: { "Content-Type": "application/json", ...extra },
+  body: JSON.stringify(datos)
+});
+
+exports.handler = async function (event) {
+  if (event.httpMethod !== "GET") {
+    return responder(405, { error: "Método no permitido" });
+  }
+
+  const { fechaInicio, fechaFin } = event.queryStringParameters || {};
+
+  if ((fechaInicio && !REGEX_FECHA.test(fechaInicio)) ||
+      (fechaFin && !REGEX_FECHA.test(fechaFin))) {
+    return responder(400, { error: "Formato de fecha inválido (use AAAA-MM-DD)" });
   }
 
   const token = process.env.GITHUB_TOKEN_ESPACIA_REPORTES_BD;
-  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${folder}?ref=${branch}`;
-  
   const headers = {
     "User-Agent": "Netlify-Serverless-App",
     "Accept": "application/vnd.github.v3+json"
   };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+  const apiUrl =
+    `https://api.github.com/repos/${PROPIETARIO}/${REPOSITORIO}/contents/${CARPETA}?ref=${RAMA}`;
 
   try {
-    const response = await fetch(apiUrl, { headers });
-    
-    if (!response.ok) {
-      const errorData = await response.text();
-      return { statusCode: response.status, body: JSON.stringify({ error: errorData }) };
+    const respuesta = await fetch(apiUrl, { headers });
+    if (!respuesta.ok) {
+      console.error("GitHub respondió", respuesta.status, await respuesta.text());
+      return responder(502, { error: "No se pudo leer el repositorio de datos" });
     }
 
-    const files = await response.json();
-    let jsonFiles = files.filter(file => file.type === "file" && file.name.endsWith(".json"));
+    const archivos = await respuesta.json();
+
+    // 1) Filtrar por nombre de archivo ANTES de descargar (ahorra llamadas)
+    let jsonFiles = archivos.filter(a => a.type === "file" && a.name.endsWith(".json"));
 
     if (fechaInicio || fechaFin) {
-      jsonFiles = jsonFiles.filter(file => {
-        const match = file.name.match(/\d{4}-\d{2}-\d{2}/);
-        if (!match) return true; 
-        const fileDate = match[0];
-        
-        if (fechaInicio && fileDate < fechaInicio) return false;
-        if (fechaFin && fileDate > fechaFin) return false;
+      jsonFiles = jsonFiles.filter(a => {
+        const m = a.name.match(/\d{4}-\d{2}-\d{2}/);
+        if (!m) return true;
+        const f = m[0];
+        if (fechaInicio && f < fechaInicio) return false;
+        if (fechaFin && f > fechaFin) return false;
         return true;
       });
     }
 
-    const allBackupsData = [];
-    for (const file of jsonFiles) {
-      const fileRes = await fetch(file.download_url, { headers });
-      if (fileRes.ok) {
-        const jsonData = await fileRes.json();
-        
-        if (fechaInicio || fechaFin) {
-          const fReserva = jsonData.fechaReservas;
-          if (fReserva) {
-            if (fechaInicio && fReserva < fechaInicio) continue;
-            if (fechaFin && fReserva > fechaFin) continue;
-          }
-        }
-
-        // --- FILTRO NUEVO: Solo incluir si tiene un array de reservas y contiene al menos 1 elemento ---
-        if (jsonData.reservas && Array.isArray(jsonData.reservas) && jsonData.reservas.length > 0) {
-          allBackupsData.push(jsonData);
-        }
+    // 2) Descargar en paralelo, por lotes
+    const descargar = async (archivo) => {
+      try {
+        const res = await fetch(archivo.download_url, { headers });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch (e) {
+        console.error("Error descargando", archivo.name, e.message);
+        return null;
       }
+    };
+
+    const resultados = [];
+    for (let i = 0; i < jsonFiles.length; i += TAMANO_LOTE) {
+      const lote = jsonFiles.slice(i, i + TAMANO_LOTE);
+      resultados.push(...await Promise.all(lote.map(descargar)));
     }
 
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(allBackupsData)
-    };
+    // 3) Filtro final por fechaReservas y descarte de resguardos vacíos
+    const datos = resultados.filter(d => {
+      if (!d || !Array.isArray(d.reservas) || d.reservas.length === 0) return false;
+      const f = d.fechaReservas;
+      if (f) {
+        if (fechaInicio && f < fechaInicio) return false;
+        if (fechaFin && f > fechaFin) return false;
+      }
+      return true;
+    });
+
+    return responder(200, datos, { "Cache-Control": "private, max-age=60" });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message })
-    };
+    console.error("Error en get-backups:", error);
+    return responder(500, { error: "Error interno" });
   }
 };
