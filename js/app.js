@@ -78,7 +78,7 @@ async function inicializarDatos() {
       return;
     }
 
-    statusBadge.textContent = `Sincronizado (${cacheBackups.length} archivos)`;
+    statusBadge.textContent = `Sincronizado (${cacheBackups.length} archivos)` + (cacheBackups.parcial ? " — parcial: acotá el período" : "");
     statusBadge.className = "px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-medium rounded-full";
     processAndRenderData(cacheBackups);
 

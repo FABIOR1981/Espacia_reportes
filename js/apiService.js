@@ -13,8 +13,11 @@ export const ApiService = {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Error en Netlify Function: ${response.status} ${response.statusText}`);
 
-      // Retorna los resguardos normalizados
-      return await response.json();
+      // Retorna los resguardos normalizados.
+      // .parcial = true si el servidor cortó por tiempo y faltan resguardos antiguos.
+      const datos = await response.json();
+      datos.parcial = response.headers.get("X-Resultado-Parcial") === "true";
+      return datos;
     } catch (error) {
       console.error("Error en ApiService:", error);
       throw error;
