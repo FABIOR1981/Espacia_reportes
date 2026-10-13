@@ -1,5 +1,11 @@
 // js/utils.js - Funciones auxiliares y de clasificación
 
+// Escapa texto para insertarlo de forma segura dentro de innerHTML o de atributos HTML
+export function escaparHtml(valor) {
+  const mapa = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  return String(valor ?? "").replace(/[&<>"']/g, c => mapa[c]);
+}
+
 export function extraerProfesional(r) {
   let summaryClean = r.summary.replace("Cancelada - ", "").trim();
   if (summaryClean.includes(":")) {

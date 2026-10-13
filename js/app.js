@@ -1,6 +1,6 @@
 // js/app.js - Lógica principal y flujo de la aplicación
 import { ApiService } from './apiService.js';
-import { extraerProfesional, clasificarReserva } from './utils.js';
+import { extraerProfesional, clasificarReserva, escaparHtml } from './utils.js';
 import { charts, TAMANOS_IMPRESION, renderizarGraficos, generarImagenesBN } from './charts.js';
 
 let cacheBackups = [];
@@ -169,7 +169,7 @@ function renderArchivosTablePaginated() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-gray-50 transition-colors";
     tr.innerHTML = `
-      <td class="p-4 font-semibold text-indigo-900">${fileData.fechaReservas}</td>
+      <td class="p-4 font-semibold text-indigo-900">${escaparHtml(fileData.fechaReservas)}</td>
       <td class="p-4 text-gray-500 text-xs">${new Date(fileData.fechaDelBackup).toLocaleString()}</td>
       <td class="p-4 text-center font-bold text-gray-700">${totalReservas}</td>
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${efecU}</span></td>
@@ -177,11 +177,12 @@ function renderArchivosTablePaginated() {
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">${cUser}</span></td>
       <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-900">${cAdmin}</span></td>
       <td class="p-4 text-center">
-        <button onclick="verDetalleArchivo('${fileData.fechaReservas}')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-colors">
+        <button class="btn-detalle px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg transition-colors">
           🔍 Ver Detalle
         </button>
       </td>
     `;
+    tr.querySelector(".btn-detalle").addEventListener("click", () => window.verDetalleArchivo(fileData.fechaReservas));
     tbody.appendChild(tr);
   });
 
@@ -235,20 +236,20 @@ window.verDetalleArchivo = function(fechaReservas) {
       card.innerHTML = `
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-2">
           <div>
-            <span class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">Consultorio ${consultorio}</span>
-            <span class="font-bold text-gray-800 ml-2">${r.summary}</span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">Consultorio ${escaparHtml(consultorio)}</span>
+            <span class="font-bold text-gray-800 ml-2">${escaparHtml(r.summary)}</span>
           </div>
           <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">
             ${badgeText}
           </span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600">
-          <div>👤 <strong>Profesional:</strong> ${prof}</div>
-          <div>📧 <strong>Email:</strong> ${email}</div>
+          <div>👤 <strong>Profesional:</strong> ${escaparHtml(prof)}</div>
+          <div>📧 <strong>Email:</strong> ${escaparHtml(email)}</div>
           <div>🕒 <strong>Horario:</strong> ${r.inicio.split("T")[1].substring(0,5)} - ${r.fin.split("T")[1].substring(0,5)} hs</div>
         </div>
         <div class="text-[11px] text-gray-400 pt-1 border-t space-y-0.5">
-          ${r.description.map(line => `<div>• ${line}</div>`).join('')}
+          ${r.description.map(line => `<div>• ${escaparHtml(line)}</div>`).join('')}
         </div>
       `;
       contenedor.appendChild(card);
